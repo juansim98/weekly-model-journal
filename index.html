@@ -401,7 +401,7 @@ let labels = Object.assign({}, LABELS);   // live copy — the Labels panel edit
 const state = {q:"",pair:"",bias:"",label:""};
 let visible = [];   // flattened pair-weeks currently shown — drives Present mode
 
-function chartPath(week,pair){ return `charts/${week}_${pair}.png`; }
+function chartPath(week,pair){ return `Charts/${week}_${pair}.png`; }
 function biasClass(b){ return b==="Bullish"?"bull":b==="Bearish"?"bear":"neutral"; }
 function known(l){ return Object.prototype.hasOwnProperty.call(labels,l); }
 
