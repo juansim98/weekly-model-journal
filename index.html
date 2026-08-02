@@ -163,7 +163,6 @@ const WEEKS = [
   .pager-mid{flex:1 1 auto;text-align:center;min-width:0}
   .pager-id{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.01em;line-height:1.2}
   .pager-sub{font-size:13px;color:var(--muted);display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
-  .pager-pos{font-family:var(--mono);font-size:11px;color:var(--faint)}
   #pagerTheme{margin-left:0}
   body.allweeks .pager{display:none}
 
@@ -436,7 +435,6 @@ const WEEKS = [
     <div class="pager-sub">
       <span id="pagerDates"></span>
       <span class="week-theme" id="pagerTheme"></span>
-      <span class="pager-pos" id="pagerPos"></span>
     </div>
   </div>
   <button class="btn pgbtn" id="newerWeek">Next&nbsp;&#9654;</button>
@@ -663,8 +661,6 @@ function drawPager(){
   const theme = document.getElementById("pagerTheme");
   theme.textContent = (w && w.theme) ? w.theme : "";
   theme.style.display = (w && w.theme) ? "" : "none";
-  document.getElementById("pagerPos").textContent   =
-    WEEKS.length ? `week ${state.week+1} of ${WEEKS.length}` : "";
   document.getElementById("olderWeek").disabled = state.week >= WEEKS.length-1;
   document.getElementById("newerWeek").disabled = state.week <= 0;
   if(!pickOpen) syncPick();
