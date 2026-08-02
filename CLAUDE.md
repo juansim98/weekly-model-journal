@@ -53,10 +53,19 @@ Rules:
 
 ## How the page is laid out
 
-One week on screen at a time. A pager above the record carries `◀ Newer`, the
-week id and dates, `Older ▶`, and a jump-to-week dropdown. Labelled by direction
-in time, not "prev/next", because the record is stored newest-first and "next"
-would be ambiguous.
+One week on screen at a time. A pager above the record carries `◀ Prev`, the
+week id and dates, `Next ▶`, and a jump-to-week box.
+
+`Prev` goes **back** in time and `Next` **forward**, which is the opposite of
+their array direction — `WEEKS` is stored newest-first, so `Prev` moves the index
+up and `Next` moves it down. The button ids (`olderWeek`, `newerWeek`) name the
+direction in time rather than the label, so the code stays readable if the
+wording changes again.
+
+The jump box filters as you type, matching a week's id, dates or theme. It is a
+custom combobox rather than a `<select>` because a plain dropdown stops being
+usable once the record runs to dozens of weeks. Arrow keys move the highlight,
+Enter picks, Escape restores the current week.
 
 Above the label chips is a scope switch, **Filters apply to: This week | All weeks**:
 

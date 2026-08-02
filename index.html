@@ -169,8 +169,22 @@ const WEEKS = [
   .pager-sub{font-size:13px;color:var(--muted);display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
   .pager-pos{font-family:var(--mono);font-size:11px;color:var(--faint)}
   #pagerTheme{margin-left:0}
-  .weekjump{flex:none;max-width:210px}
   body.allweeks .pager{display:none}
+
+  /* jump-to-week: a filtering box, because a plain dropdown stops being
+     usable somewhere around week thirty */
+  .weekpick{position:relative;flex:none;width:232px}
+  .weekpick-input{width:100%;font-family:var(--mono);font-size:11.5px;padding:7px 9px}
+  .weekpick-list{position:absolute;z-index:30;top:calc(100% + 4px);left:0;right:0;
+    margin:0;padding:4px;list-style:none;max-height:264px;overflow-y:auto;
+    background:var(--card);border:1px solid var(--rule);border-radius:3px;
+    box-shadow:0 8px 22px rgba(24,36,72,.16)}
+  .weekpick-list li{font-family:var(--mono);font-size:11.5px;color:var(--muted);
+    padding:6px 8px;border-radius:2px;cursor:pointer;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .weekpick-list li.current{color:var(--ink);font-weight:600}
+  .weekpick-list li.hi{background:var(--ink);color:var(--paper)}
+  .weekpick-list li.none{cursor:default;color:var(--faint)}
 
   /* ---- filter scope switch ---- */
   .scopebar{max-width:1120px;margin:0 auto;padding:18px 24px 0;
@@ -337,7 +351,7 @@ const WEEKS = [
     .dayrow{grid-template-columns:1fr}
   }
   @media print{ .controls,.legend,.scopebar,.howto,#present,#builder{display:none !important}
-    .pager .pgbtn,.pager .weekjump{display:none !important}
+    .pager .pgbtn,.pager .weekpick{display:none !important}
     body{background:#fff} .pair{break-inside:avoid} }
 </style>
 </head>
@@ -370,7 +384,7 @@ const WEEKS = [
 </div>
 
 <div class="pager" id="pager">
-  <button class="btn pgbtn" id="prevWeek">&#9664;&nbsp;Newer</button>
+  <button class="btn pgbtn" id="olderWeek">&#9664;&nbsp;Prev</button>
   <div class="pager-mid">
     <div class="pager-id" id="pagerId"></div>
     <div class="pager-sub">
@@ -379,8 +393,13 @@ const WEEKS = [
       <span class="pager-pos" id="pagerPos"></span>
     </div>
   </div>
-  <button class="btn pgbtn" id="nextWeek">Older&nbsp;&#9654;</button>
-  <select class="weekjump" id="weekJump" aria-label="Jump to a week"></select>
+  <button class="btn pgbtn" id="newerWeek">Next&nbsp;&#9654;</button>
+  <div class="weekpick" id="weekPick">
+    <input type="text" id="weekSearch" class="weekpick-input" role="combobox"
+           aria-expanded="false" aria-controls="weekList" aria-autocomplete="list"
+           autocomplete="off" placeholder="Jump to week">
+    <ul class="weekpick-list" id="weekList" role="listbox" hidden></ul>
+  </div>
 </div>
 
 <div class="scopebar">
@@ -401,7 +420,7 @@ const WEEKS = [
     <li>Click <b>Add a week</b>, fill the form, press <b>Generate</b>. Copy what appears.</li>
     <li>Open this file in Notepad. Near the top you will see <code>===== NEWEST WEEK GOES HERE =====</code>. Paste directly under that line and save.</li>
     <li>Double-click <b>publish.bat</b>. It checks the file, fixes the chart filenames, and puts the week live. Refresh in a minute.</li>
-    <li><b>One week on screen.</b> Use <b>&#9664; Newer</b> / <b>Older &#9654;</b> or the dropdown to move between weeks. New weeks always open first.</li>
+    <li><b>One week on screen.</b> <b>&#9664; Prev</b> goes back in time, <b>Next &#9654;</b> forward. New weeks always open first. To jump straight to a week, click the box on the right and start typing — <code>W31</code>, <code>july</code> and <code>2026</code> all narrow the list.</li>
     <li><b>Two ways to filter.</b> <b>This week</b> narrows the week you are on. <b>All weeks</b> hides the pager and gathers every week that matches — use it to show the class the same setup repeating across months.</li>
     <li><b>Two links, one file.</b> Give the class the plain address. Keep the same address with <code>#edit</code> on the end for yourself — that is the only place Present, Add a week and Labels appear. Bookmark both.</li>
     <li><b>For class:</b> open your <code>#edit</code> link, filter to one pair, then press <b>Present</b>. Arrow keys move, Esc leaves. The class sees a clean page with search and filters and nothing to break.</li>
@@ -575,11 +594,10 @@ function render(){
   drawPager();
 }
 
-/* ---------------- week pager ---------------- */
-function buildWeekJump(){
-  document.getElementById("weekJump").innerHTML =
-    WEEKS.map((w,i)=>`<option value="${i}">${esc(w.id)} · ${esc(w.dates)}</option>`).join("");
-}
+/* ---------------- week pager ----------------
+   WEEKS is stored newest-first, so index 0 is the newest week. Prev steps
+   back in time (index up), Next forward (index down).
+   ------------------------------------------------------------------- */
 function drawPager(){
   const w = WEEKS[state.week];
   document.getElementById("pagerId").textContent    = w ? w.id : "No weeks yet";
@@ -589,10 +607,9 @@ function drawPager(){
   theme.style.display = (w && w.theme) ? "" : "none";
   document.getElementById("pagerPos").textContent   =
     WEEKS.length ? `week ${state.week+1} of ${WEEKS.length}` : "";
-  document.getElementById("prevWeek").disabled = state.week <= 0;
-  document.getElementById("nextWeek").disabled = state.week >= WEEKS.length-1;
-  const sel = document.getElementById("weekJump");
-  if(sel.value !== String(state.week)) sel.value = String(state.week);
+  document.getElementById("olderWeek").disabled = state.week >= WEEKS.length-1;
+  document.getElementById("newerWeek").disabled = state.week <= 0;
+  if(!pickOpen) syncPick();
 }
 function goWeek(i){
   if(i<0 || i>=WEEKS.length) return;
@@ -607,12 +624,95 @@ function setScope(s){
   document.getElementById("scopeAll").setAttribute("aria-pressed",  s==="all" ?"true":"false");
   render();
 }
-buildWeekJump();
-document.getElementById("prevWeek").addEventListener("click",()=>goWeek(state.week-1));
-document.getElementById("nextWeek").addEventListener("click",()=>goWeek(state.week+1));
-document.getElementById("weekJump").addEventListener("change",e=>goWeek(parseInt(e.target.value,10)));
+document.getElementById("olderWeek").addEventListener("click",()=>goWeek(state.week+1));
+document.getElementById("newerWeek").addEventListener("click",()=>goWeek(state.week-1));
 document.getElementById("scopeWeek").addEventListener("click",()=>setScope("week"));
 document.getElementById("scopeAll").addEventListener("click",()=>setScope("all"));
+
+/* ---------------- jump-to-week ----------------
+   A plain <select> is fine for a handful of weeks and unusable at a hundred,
+   so this filters as you type. Matches the week id, its dates or its theme,
+   so "aug", "W31" and "2026-W" all narrow the list.
+   ------------------------------------------------------------------- */
+const pickInput = document.getElementById("weekSearch");
+const pickList  = document.getElementById("weekList");
+let pickOpen = false;
+let pickRows = [];   // week indexes currently listed
+let pickHi   = -1;   // highlighted row within pickRows
+
+function weekLabel(w){ return w.id + " · " + w.dates; }
+function syncPick(){ pickInput.value = WEEKS[state.week] ? weekLabel(WEEKS[state.week]) : ""; }
+
+function pickMatches(query){
+  const s = query.trim().toLowerCase();
+  const out = [];
+  WEEKS.forEach((w,i)=>{
+    if(!s || (w.id+" "+w.dates+" "+(w.theme||"")).toLowerCase().includes(s)) out.push(i);
+  });
+  return out;
+}
+function drawPickList(){
+  pickList.innerHTML = pickRows.length
+    ? pickRows.map((wi,row)=>
+        `<li role="option" data-row="${row}" aria-selected="${row===pickHi?"true":"false"}"
+             class="${row===pickHi?"hi":""}${wi===state.week?" current":""}"
+         >${esc(weekLabel(WEEKS[wi]))}</li>`).join("")
+    : `<li class="none">No week matches that</li>`;
+  const hi = pickList.querySelector("li.hi");
+  if(hi && hi.scrollIntoView) hi.scrollIntoView({block:"nearest"});
+}
+function openPick(all){
+  pickRows = pickMatches(all ? "" : pickInput.value);
+  pickHi   = Math.max(0, pickRows.indexOf(state.week));
+  pickOpen = true;
+  pickList.hidden = false;
+  pickInput.setAttribute("aria-expanded","true");
+  drawPickList();
+}
+function closePick(restore){
+  pickOpen = false;
+  pickList.hidden = true;
+  pickInput.setAttribute("aria-expanded","false");
+  if(restore) syncPick();
+}
+function choosePick(row){
+  if(row<0 || row>=pickRows.length) return;
+  const wi = pickRows[row];
+  closePick(false);
+  goWeek(wi);
+  syncPick();
+}
+
+pickInput.addEventListener("focus",()=>{ openPick(true); pickInput.select(); });
+pickInput.addEventListener("input",()=>{
+  pickRows = pickMatches(pickInput.value);
+  pickHi   = pickRows.length ? 0 : -1;
+  pickOpen = true;
+  pickList.hidden = false;
+  pickInput.setAttribute("aria-expanded","true");
+  drawPickList();
+});
+pickInput.addEventListener("keydown",e=>{
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+    e.preventDefault();
+    if(!pickOpen){ openPick(true); return; }
+    if(!pickRows.length) return;
+    pickHi = (pickHi + (e.key==="ArrowDown"?1:-1) + pickRows.length) % pickRows.length;
+    drawPickList();
+  }
+  else if(e.key==="Enter"){ e.preventDefault(); if(pickOpen) choosePick(pickHi); }
+  else if(e.key==="Escape"){ if(pickOpen){ e.preventDefault(); closePick(true); pickInput.blur(); } }
+  else if(e.key==="Tab"){ closePick(true); }
+});
+// mousedown, not click: it fires before the input loses focus.
+pickList.addEventListener("mousedown",e=>{
+  const li=e.target.closest("li[data-row]"); if(!li) return;
+  e.preventDefault();
+  choosePick(parseInt(li.dataset.row,10));
+});
+document.addEventListener("mousedown",e=>{
+  if(pickOpen && !e.target.closest("#weekPick")) closePick(true);
+});
 
 function pairCard(w,p){
   const strip = p.days.map(([d,label])=>{
