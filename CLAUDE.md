@@ -51,6 +51,25 @@ Rules:
 - `bias` is exactly `Bullish`, `Bearish`, or `Neutral`.
 - `range` is Monday's high / low as I state it.
 
+## How the page is laid out
+
+One week on screen at a time. A pager above the record carries `◀ Newer`, the
+week id and dates, `Older ▶`, and a jump-to-week dropdown. Labelled by direction
+in time, not "prev/next", because the record is stored newest-first and "next"
+would be ambiguous.
+
+Above the label chips is a scope switch, **Filters apply to: This week | All weeks**:
+
+- **This week** — the pager stays; search, pair, bias and label chips narrow the
+  week you are on. If a filter matches nothing here but does match elsewhere, the
+  page says so and offers a button through to the all-weeks view.
+- **All weeks** — the pager hides and every week containing a match is listed
+  newest-first under its own heading. This is how the whole page behaved before.
+
+Both scopes run the same predicate (`pairMatches`); only the set of weeks handed
+to it changes. The week heading is drawn only in all-weeks view — on a single
+week the pager already names it.
+
 ## Day labels — the important rule
 
 The second element of each day is a label, and it **must match a key in `LABELS` exactly**.

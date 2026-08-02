@@ -158,6 +158,31 @@ const WEEKS = [
   .btn[aria-pressed=true],.btn.solid{background:var(--ink);color:var(--paper);border-color:var(--ink)}
   .count{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-left:auto}
 
+  /* ---- week pager: one week on screen at a time ---- */
+  .pager{max-width:1120px;margin:0 auto;padding:20px 24px 0;
+    display:flex;align-items:center;gap:14px}
+  .pgbtn{flex:none}
+  .pgbtn[disabled]{opacity:.35;cursor:default}
+  .pgbtn[disabled]:hover{border-color:var(--rule)}
+  .pager-mid{flex:1 1 auto;text-align:center;min-width:0}
+  .pager-id{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.01em;line-height:1.2}
+  .pager-sub{font-size:13px;color:var(--muted);display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+  .pager-pos{font-family:var(--mono);font-size:11px;color:var(--faint)}
+  #pagerTheme{margin-left:0}
+  .weekjump{flex:none;max-width:210px}
+  body.allweeks .pager{display:none}
+
+  /* ---- filter scope switch ---- */
+  .scopebar{max-width:1120px;margin:0 auto;padding:18px 24px 0;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .scope-label{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.09em;color:var(--faint)}
+  .scope-switch{display:inline-flex;border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+  .scopebtn{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;
+    background:var(--card);border:0;padding:7px 13px;cursor:pointer;color:var(--muted)}
+  .scopebtn + .scopebtn{border-left:1px solid var(--rule)}
+  .scopebtn[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+
   .legend{max-width:1120px;margin:0 auto;padding:16px 24px 0;display:flex;flex-wrap:wrap;gap:6px}
   .chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;border:1px solid var(--rule);
     background:var(--card);border-radius:2px;padding:4px 8px 4px 6px;cursor:pointer;color:var(--muted);
@@ -223,6 +248,7 @@ const WEEKS = [
   body.classmode .modetag{display:none}
   .hidden{display:none !important}
   .empty{font-family:var(--mono);font-size:13px;color:var(--faint);padding:40px 0}
+  .empty .btn{margin-left:10px;color:var(--ink);border-color:var(--faint)}
 
   /* ---------- PRESENT MODE ---------- */
   #present{position:fixed;inset:0;z-index:60;background:var(--paper);display:none;
@@ -310,7 +336,8 @@ const WEEKS = [
     .field{flex:1 1 100%}
     .dayrow{grid-template-columns:1fr}
   }
-  @media print{ .controls,.legend,.howto,#present,#builder{display:none !important}
+  @media print{ .controls,.legend,.scopebar,.howto,#present,#builder{display:none !important}
+    .pager .pgbtn,.pager .weekjump{display:none !important}
     body{background:#fff} .pair{break-inside:avoid} }
 </style>
 </head>
@@ -342,6 +369,28 @@ const WEEKS = [
   </div>
 </div>
 
+<div class="pager" id="pager">
+  <button class="btn pgbtn" id="prevWeek">&#9664;&nbsp;Newer</button>
+  <div class="pager-mid">
+    <div class="pager-id" id="pagerId"></div>
+    <div class="pager-sub">
+      <span id="pagerDates"></span>
+      <span class="week-theme" id="pagerTheme"></span>
+      <span class="pager-pos" id="pagerPos"></span>
+    </div>
+  </div>
+  <button class="btn pgbtn" id="nextWeek">Older&nbsp;&#9654;</button>
+  <select class="weekjump" id="weekJump" aria-label="Jump to a week"></select>
+</div>
+
+<div class="scopebar">
+  <span class="scope-label">Filters apply to</span>
+  <span class="scope-switch">
+    <button class="scopebtn" id="scopeWeek" aria-pressed="true">This week</button>
+    <button class="scopebtn" id="scopeAll" aria-pressed="false">All weeks</button>
+  </span>
+</div>
+
 <div class="legend" id="legend"></div>
 <main id="out"></main>
 
@@ -352,6 +401,8 @@ const WEEKS = [
     <li>Click <b>Add a week</b>, fill the form, press <b>Generate</b>. Copy what appears.</li>
     <li>Open this file in Notepad. Near the top you will see <code>===== NEWEST WEEK GOES HERE =====</code>. Paste directly under that line and save.</li>
     <li>Double-click <b>publish.bat</b>. It checks the file, fixes the chart filenames, and puts the week live. Refresh in a minute.</li>
+    <li><b>One week on screen.</b> Use <b>&#9664; Newer</b> / <b>Older &#9654;</b> or the dropdown to move between weeks. New weeks always open first.</li>
+    <li><b>Two ways to filter.</b> <b>This week</b> narrows the week you are on. <b>All weeks</b> hides the pager and gathers every week that matches — use it to show the class the same setup repeating across months.</li>
     <li><b>Two links, one file.</b> Give the class the plain address. Keep the same address with <code>#edit</code> on the end for yourself — that is the only place Present, Add a week and Labels appear. Bookmark both.</li>
     <li><b>For class:</b> open your <code>#edit</code> link, filter to one pair, then press <b>Present</b>. Arrow keys move, Esc leaves. The class sees a clean page with search and filters and nothing to break.</li>
   </ol>
@@ -429,52 +480,139 @@ const WEEKS = [
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const DAYS = ["Mon","Tue","Wed","Thu","Fri"];
 let labels = Object.assign({}, LABELS);   // live copy — the Labels panel edits this
-const state = {q:"",pair:"",bias:"",label:""};
+const state = {q:"",pair:"",bias:"",label:"",week:0,scope:"week"};
 let visible = [];   // flattened pair-weeks currently shown — drives Present mode
 
 function chartPath(week,pair){ return `Charts/${week}_${pair}.png`; }
 function biasClass(b){ return b==="Bullish"?"bull":b==="Bearish"?"bear":"neutral"; }
 function known(l){ return Object.prototype.hasOwnProperty.call(labels,l); }
 
-function render(){
+/* ---------------- filtering ----------------
+   One predicate, used by both scopes. "This week" runs it over the week
+   currently on the pager; "All weeks" runs it over the whole record. The
+   filters themselves behave identically either way — only the set of weeks
+   they are handed changes.
+   ------------------------------------------------------------------- */
+function pairMatches(w,p){
   const q = state.q.trim().toLowerCase();
+  if(state.pair && p.pair!==state.pair) return false;
+  if(state.bias && p.bias!==state.bias) return false;
+  if(state.label && !p.days.some(d=>d[1]===state.label)) return false;
+  if(q){
+    const hay=(w.id+" "+w.dates+" "+w.theme+" "+(w.note||"")+" "+p.pair+" "+p.bias+" "+p.range+" "+
+               p.days.map(d=>d[1]+" "+d[2]).join(" ")).toLowerCase();
+    if(!hay.includes(q)) return false;
+  }
+  return true;
+}
+
+function filtersOn(){ return !!(state.q.trim()||state.pair||state.bias||state.label); }
+
+function totalMatches(){
+  let n=0;
+  WEEKS.forEach(w=>w.pairs.forEach(p=>{ if(pairMatches(w,p)) n++; }));
+  return n;
+}
+
+/* The week heading labels each group in the all-weeks list. On a single week
+   the pager already says which week you are on, so it is left off rather than
+   printed twice. */
+function weekSection(w,cards,showHead){
+  return `<section class="week">
+    ${showHead?`<div class="week-head">
+      <span class="week-id">${esc(w.id)}</span>
+      <span class="week-dates">${esc(w.dates)}</span>
+      ${w.theme?`<span class="week-theme">${esc(w.theme)}</span>`:""}
+    </div>`:""}
+    ${w.note?`<p class="week-note">${esc(w.note)}</p>`:""}
+    ${cards.map(p=>pairCard(w,p)).join("")}
+  </section>`;
+}
+
+function render(){
   let html = ""; visible = [];
 
-  WEEKS.forEach(w=>{
-    const cards = w.pairs.filter(p=>{
-      if(state.pair && p.pair!==state.pair) return false;
-      if(state.bias && p.bias!==state.bias) return false;
-      if(state.label && !p.days.some(d=>d[1]===state.label)) return false;
-      if(q){
-        const hay=(w.id+" "+w.dates+" "+w.theme+" "+(w.note||"")+" "+p.pair+" "+p.bias+" "+p.range+" "+
-                   p.days.map(d=>d[1]+" "+d[2]).join(" ")).toLowerCase();
-        if(!hay.includes(q)) return false;
-      }
-      return true;
-    });
+  const scoped = state.scope==="all"
+    ? WEEKS
+    : (WEEKS[state.week] ? [WEEKS[state.week]] : []);
+
+  scoped.forEach(w=>{
+    const cards = w.pairs.filter(p=>pairMatches(w,p));
     if(!cards.length) return;
     cards.forEach(p=>visible.push({week:w,pair:p}));
-    html += `<section class="week">
-      <div class="week-head">
-        <span class="week-id">${esc(w.id)}</span>
-        <span class="week-dates">${esc(w.dates)}</span>
-        ${w.theme?`<span class="week-theme">${esc(w.theme)}</span>`:""}
-      </div>
-      ${w.note?`<p class="week-note">${esc(w.note)}</p>`:""}
-      ${cards.map(p=>pairCard(w,p)).join("")}
-    </section>`;
+    html += weekSection(w,cards,state.scope==="all");
   });
 
+  if(!html){
+    // On a single week it is easy to filter for something that lives in a
+    // different week, so say so rather than showing a bare empty page.
+    if(state.scope==="week" && filtersOn()){
+      const here = WEEKS[state.week];
+      const n = totalMatches();
+      html = `<p class="empty">Nothing in ${esc(here?here.id:"this week")} matches that filter.`
+           + (n ? ` <button class="btn" id="gotoAll">${n} match${n===1?"":"es"} elsewhere &mdash; show all weeks</button>` : "")
+           + `</p>`;
+    } else {
+      html = `<p class="empty">Nothing matches that filter.</p>`;
+    }
+  }
+
   const out=document.getElementById("out");
-  out.innerHTML = html || `<p class="empty">Nothing matches that filter.</p>`;
+  out.innerHTML = html;
+
+  const jump = document.getElementById("gotoAll");
+  if(jump) jump.addEventListener("click",()=>setScope("all"));
+
   document.getElementById("count").textContent =
-    `${visible.length} pair-week${visible.length===1?"":"s"} · ${WEEKS.length} week${WEEKS.length===1?"":"s"} on record`;
+    `${visible.length} pair-week${visible.length===1?"":"s"} shown · ${WEEKS.length} week${WEEKS.length===1?"":"s"} on record`;
+
   out.querySelectorAll("img[data-fallback]").forEach(img=>{
     img.addEventListener("error",()=>{
       img.outerHTML=`<div class="chart-missing">No chart yet.<br>Save the screenshot as <b>${esc(img.dataset.fallback)}</b></div>`;
     });
   });
+
+  drawPager();
 }
+
+/* ---------------- week pager ---------------- */
+function buildWeekJump(){
+  document.getElementById("weekJump").innerHTML =
+    WEEKS.map((w,i)=>`<option value="${i}">${esc(w.id)} · ${esc(w.dates)}</option>`).join("");
+}
+function drawPager(){
+  const w = WEEKS[state.week];
+  document.getElementById("pagerId").textContent    = w ? w.id : "No weeks yet";
+  document.getElementById("pagerDates").textContent = w ? w.dates : "";
+  const theme = document.getElementById("pagerTheme");
+  theme.textContent = (w && w.theme) ? w.theme : "";
+  theme.style.display = (w && w.theme) ? "" : "none";
+  document.getElementById("pagerPos").textContent   =
+    WEEKS.length ? `week ${state.week+1} of ${WEEKS.length}` : "";
+  document.getElementById("prevWeek").disabled = state.week <= 0;
+  document.getElementById("nextWeek").disabled = state.week >= WEEKS.length-1;
+  const sel = document.getElementById("weekJump");
+  if(sel.value !== String(state.week)) sel.value = String(state.week);
+}
+function goWeek(i){
+  if(i<0 || i>=WEEKS.length) return;
+  state.week = i;
+  render();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function setScope(s){
+  state.scope = s;
+  document.body.classList.toggle("allweeks", s==="all");
+  document.getElementById("scopeWeek").setAttribute("aria-pressed", s==="week"?"true":"false");
+  document.getElementById("scopeAll").setAttribute("aria-pressed",  s==="all" ?"true":"false");
+  render();
+}
+buildWeekJump();
+document.getElementById("prevWeek").addEventListener("click",()=>goWeek(state.week-1));
+document.getElementById("nextWeek").addEventListener("click",()=>goWeek(state.week+1));
+document.getElementById("weekJump").addEventListener("change",e=>goWeek(parseInt(e.target.value,10)));
+document.getElementById("scopeWeek").addEventListener("click",()=>setScope("week"));
+document.getElementById("scopeAll").addEventListener("click",()=>setScope("all"));
 
 function pairCard(w,p){
   const strip = p.days.map(([d,label])=>{
