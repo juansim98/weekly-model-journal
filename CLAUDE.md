@@ -117,6 +117,12 @@ I save doesn't have to be perfect, but the convention above is still what lands
 in the repo. The files are JPEGs regardless of the `.png` extension; browsers
 sniff the content, so this is intentional and fine.
 
+Clicking a chart opens it full screen (`#lightbox`). Clicking the image again
+toggles between fit-to-screen and full size, which can then be panned; clicking
+the surround, pressing Esc, or the Close button dismisses it. Charts are
+illegible at phone width otherwise. The Esc handling sits ahead of the class-mode
+early return in the keydown listener, because the class uses the plain link.
+
 ## Publishing
 
 `.\publish.ps1` — or double-click `publish.bat` — is the whole weekly deploy.

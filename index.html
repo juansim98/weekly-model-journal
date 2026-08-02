@@ -264,6 +264,35 @@ const WEEKS = [
   .empty{font-family:var(--mono);font-size:13px;color:var(--faint);padding:40px 0}
   .empty .btn{margin-left:10px;color:var(--ink);border-color:var(--faint)}
 
+  /* ---- chart lightbox ----
+     Charts are unreadable at phone width. Tapping one opens it full screen;
+     tapping again switches between fit-to-screen and full size, which you can
+     then pan around. */
+  .chart img{cursor:zoom-in}
+  #lightbox{position:fixed;inset:0;z-index:100;background:#0E1426;
+    display:none;flex-direction:column}
+  body.lightboxing{overflow:hidden}
+  body.lightboxing #lightbox{display:flex}
+  .lb-bar{flex:none;display:flex;align-items:center;gap:12px;padding:12px 14px;
+    color:#E9ECF0;font-family:var(--mono);font-size:11.5px}
+  .lb-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.04em}
+  .lb-hint{color:rgba(233,236,240,.55);white-space:nowrap}
+  .lb-close{margin-left:auto;flex:none;background:transparent;color:#E9ECF0;
+    border:1px solid rgba(233,236,240,.5);border-radius:3px;padding:7px 13px;
+    cursor:pointer;font-family:var(--mono);font-size:11.5px;letter-spacing:.05em}
+  .lb-stage{flex:1 1 auto;overflow:auto;padding:0 12px 16px;
+    display:flex;align-items:center;justify-content:center}
+  .lb-stage img{max-width:100%;max-height:100%;object-fit:contain;
+    display:block;cursor:zoom-in;background:#FFF}
+  .lb-stage.zoom{align-items:flex-start;justify-content:flex-start}
+  .lb-stage.zoom img{max-width:none;max-height:none;width:auto;cursor:zoom-out}
+  .lb-hint-narrow{display:none}
+  @media (max-width:620px){
+    .lb-hint-wide{display:none}
+    .lb-hint-narrow{display:inline}
+    .lb-bar{padding:10px 12px;gap:8px}
+  }
+
   /* ---------- PRESENT MODE ---------- */
   #present{position:fixed;inset:0;z-index:60;background:var(--paper);display:none;
     flex-direction:column;padding:2.2vh 3vw}
@@ -342,13 +371,33 @@ const WEEKS = [
   .howto code{font-family:var(--mono);font-size:12.5px;background:var(--card);
     border:1px solid var(--rule);border-radius:2px;padding:1px 5px;color:var(--ink)}
 
+  /* The pager runs out of room well before the rest of the page does: the
+     jump box is a fixed width, so the week title gets crushed into a column
+     one word wide. Below this it becomes three stacked rows instead. */
+  @media (max-width:720px){
+    .pager{flex-wrap:wrap;gap:10px;padding-top:16px}
+    .pager-mid{flex:1 1 100%;order:1}
+    #olderWeek{order:2;flex:1 1 0;min-width:0}
+    #newerWeek{order:3;flex:1 1 0;min-width:0}
+    .weekpick{order:4;flex:1 1 100%;width:auto}
+    .pager-id{font-size:19px}
+  }
+
   @media (max-width:620px){
     .cell .l{font-size:9px}
     .day{grid-template-columns:1fr;gap:2px}
     .pair-range{margin-left:0;width:100%}
     input[type=search]{width:100%}
-    .field{flex:1 1 100%}
+    .field{flex:1 1 calc(50% - 5px);min-width:0}
+    .controls-inner > .field:nth-of-type(1){flex:1 1 100%}
+    .field select{width:100%}
     .dayrow{grid-template-columns:1fr}
+    /* Eleven labels stack into six rows on a phone and push the record off
+       screen. One swipeable row instead. */
+    .legend{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px;
+      scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .legend::-webkit-scrollbar{display:none}
+    .chip{flex:none}
   }
   @media print{ .controls,.legend,.scopebar,.howto,#present,#builder{display:none !important}
     .pager .pgbtn,.pager .weekpick{display:none !important}
@@ -422,10 +471,22 @@ const WEEKS = [
     <li>Double-click <b>publish.bat</b>. It checks the file, fixes the chart filenames, and puts the week live. Refresh in a minute.</li>
     <li><b>One week on screen.</b> <b>&#9664; Prev</b> goes back in time, <b>Next &#9654;</b> forward. New weeks always open first. To jump straight to a week, click the box on the right and start typing — <code>W31</code>, <code>july</code> and <code>2026</code> all narrow the list.</li>
     <li><b>Two ways to filter.</b> <b>This week</b> narrows the week you are on. <b>All weeks</b> hides the pager and gathers every week that matches — use it to show the class the same setup repeating across months.</li>
+    <li><b>Charts open full screen.</b> Click or tap any chart to enlarge it, tap again to zoom to full size and drag around. Esc or Close returns. This is the only way the charts are readable on a phone.</li>
     <li><b>Two links, one file.</b> Give the class the plain address. Keep the same address with <code>#edit</code> on the end for yourself — that is the only place Present, Add a week and Labels appear. Bookmark both.</li>
     <li><b>For class:</b> open your <code>#edit</code> link, filter to one pair, then press <b>Present</b>. Arrow keys move, Esc leaves. The class sees a clean page with search and filters and nothing to break.</li>
   </ol>
 </section>
+
+<!-- ============ CHART LIGHTBOX ============ -->
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Chart">
+  <div class="lb-bar">
+    <span class="lb-title" id="lbTitle"></span>
+    <span class="lb-hint lb-hint-wide">Click the chart to zoom &middot; Esc to close</span>
+    <span class="lb-hint lb-hint-narrow">Tap chart to zoom</span>
+    <button class="lb-close" id="lbClose">Close &#10005;</button>
+  </div>
+  <div class="lb-stage" id="lbStage"><img id="lbImg" alt=""></div>
+</div>
 
 <!-- ============ PRESENT MODE ============ -->
 <div id="present" role="dialog" aria-modal="true" aria-label="Presentation view">
@@ -734,7 +795,8 @@ function pairCard(w,p){
     </div>
     <div class="strip">${strip}</div>
     <div class="days">${days}</div>
-    <div class="chart"><img src="${esc(src)}" alt="${esc(p.pair)} ${esc(w.id)}" data-fallback="${esc(src)}"></div>
+    <div class="chart"><img src="${esc(src)}" alt="${esc(p.pair)} ${esc(w.id)}" data-fallback="${esc(src)}"
+      tabindex="0" role="button" title="Click to enlarge"></div>
   </article>`;
 }
 
@@ -766,6 +828,52 @@ document.getElementById("compactBtn").addEventListener("click",e=>{
   e.currentTarget.setAttribute("aria-pressed",on?"false":"true");
   document.body.classList.toggle("compact",!on);
 });
+
+/* ---------------- chart lightbox ----------------
+   The chart is the whole point of a card and it is illegible on a phone, so
+   any chart opens full screen. One tap fits it to the screen, another shows it
+   at full size to pan around.
+   ------------------------------------------------------------------- */
+const lbStage = document.getElementById("lbStage");
+const lbImg   = document.getElementById("lbImg");
+let lbReturn  = null;   // element to hand focus back to on close
+
+function openLightbox(src,label,from){
+  lbReturn = from || null;
+  lbImg.setAttribute("src",src);
+  lbImg.setAttribute("alt",label);
+  document.getElementById("lbTitle").textContent = label;
+  lbStage.classList.remove("zoom");
+  lbStage.scrollTop = 0; lbStage.scrollLeft = 0;
+  document.body.classList.add("lightboxing");
+  document.getElementById("lbClose").focus();
+}
+function closeLightbox(){
+  if(!document.body.classList.contains("lightboxing")) return;
+  document.body.classList.remove("lightboxing");
+  lbImg.removeAttribute("src");
+  if(lbReturn && lbReturn.focus) lbReturn.focus();
+  lbReturn = null;
+}
+function chartFrom(e){
+  const img = e.target.closest(".chart img");
+  return (img && img.getAttribute("src")) ? img : null;
+}
+document.getElementById("out").addEventListener("click",e=>{
+  const img = chartFrom(e); if(!img) return;
+  openLightbox(img.getAttribute("src"), img.getAttribute("alt")||"Chart", img);
+});
+document.getElementById("out").addEventListener("keydown",e=>{
+  if(e.key!=="Enter" && e.key!==" ") return;
+  const img = chartFrom(e); if(!img) return;
+  e.preventDefault();
+  openLightbox(img.getAttribute("src"), img.getAttribute("alt")||"Chart", img);
+});
+lbStage.addEventListener("click",e=>{
+  if(e.target===lbImg){ lbStage.classList.toggle("zoom"); return; }
+  closeLightbox();   // tapping the surround closes
+});
+document.getElementById("lbClose").addEventListener("click",closeLightbox);
 
 /* ---------------- present mode ---------------- */
 let slide=0;
@@ -807,6 +915,9 @@ document.getElementById("pNext").addEventListener("click",()=>move(1));
 document.getElementById("pPrev").addEventListener("click",()=>move(-1));
 document.getElementById("pExit").addEventListener("click",closePresent);
 document.addEventListener("keydown",e=>{
+  // Checked before class mode returns: the class uses the plain link, and Esc
+  // has to close an enlarged chart for them too.
+  if(document.body.classList.contains("lightboxing")){ if(e.key==="Escape"){ e.preventDefault(); closeLightbox(); } return; }
   if(document.body.classList.contains("labelling")){ if(e.key==="Escape") closeLabels(); return; }
   if(document.body.classList.contains("building")){ if(e.key==="Escape") closeBuilder(); return; }
   if(document.body.classList.contains("classmode")) return;
