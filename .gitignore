@@ -1,0 +1,16 @@
+# Windows clutter
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# macOS clutter, in case a chart arrives from a Mac
+.DS_Store
+
+# Editor leftovers
+*.bak
+*~
+index.html.orig
+
+# Working files that should not go live
+_tmp_*

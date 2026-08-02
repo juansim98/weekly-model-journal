@@ -1,0 +1,12 @@
+# Keep line endings settled so git stops warning about LF and CRLF.
+* text=auto eol=lf
+
+# Windows-only launcher needs CRLF.
+*.bat text eol=crlf
+
+# Charts are binary. Never let git touch them.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
