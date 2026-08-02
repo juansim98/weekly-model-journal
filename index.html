@@ -20,25 +20,56 @@
    below the line marked  ===== NEWEST WEEK GOES HERE =====
    ============================================================ */
 
-
 /* ---- DAY LABEL VOCABULARY ----------------------------------
    The colour is the pattern. Keep this list short — only add a
    label here when it genuinely keeps recurring.
    ------------------------------------------------------------ */
 const LABELS = {
-  "Range Formation":            "#5b6b80",
-  "Buy-side Liquidity Raid":    "#b4470e",
-  "Sell-side Liquidity Raid":   "#8a5a0b",
-  "Top Formation":              "#6d3a8e",
-  "MSS + Displacement":         "#0d6b62",
-  "Expansion / Delivery":       "#17408b",
-  "Completion / Profit-Taking": "#97a1ae"
+  "Range Formation":            "#5B6B80",
+  "Buy-side Liquidity Raid":    "#B4470E",
+  "Sell-side Liquidity Raid":   "#8A5A0B",
+  "Failed Breakout / Reclaim":  "#7A5C2E",
+  "Top Formation":              "#6D3A8E",
+  "Bottom Formation":           "#38566E",
+  "MSS + Displacement":         "#0D6B62",
+  "Expansion / Delivery":       "#17408B",
+  "Completion / Profit-Taking": "#97A1AE",
+  "Consolidation":              "#BCC4CE",
+  "No Model":                   "#D6DBE1"
 };
 
 
 const WEEKS = [
 
 /* ===== NEWEST WEEK GOES HERE ===== */
+{
+  id: "2026-W32",
+  dates: "3-7 August 2026",
+  theme: "",
+  note: "",
+  pairs: [
+    {
+      pair: "USDJPY", bias: "Bearish", range: "",
+      days: [
+        ["Mon","Sell-side Liquidity Raid",""],
+        ["Tue","Top Formation",""],
+        ["Wed","Buy-side Liquidity Raid",""],
+        ["Thu","Top Formation",""],
+        ["Fri","Expansion / Delivery",""]
+      ]
+    },
+    {
+      pair: "GBPJPY", bias: "Bullish", range: "",
+      days: [
+        ["Mon","Sell-side Liquidity Raid",""],
+        ["Tue","Buy-side Liquidity Raid",""],
+        ["Wed","Sell-side Liquidity Raid",""],
+        ["Thu","Sell-side Liquidity Raid",""],
+        ["Fri","Top Formation",""]
+      ]
+    }
+  ]
+},
 
 {
   id: "2026-W31",
@@ -317,10 +348,10 @@ const WEEKS = [
 <section class="howto">
   <h2>Weekly routine</h2>
   <ol>
-    <li>Save the charts into the <code>charts</code> folder as <code>WEEK_PAIR.png</code> — for example <code>2026-W31_USDJPY.png</code>. Each card tells you the exact filename it is looking for.</li>
+    <li>Save the charts into the <code>Charts</code> folder (capital C) as <code>WEEK_PAIR.png</code> — for example <code>2026-W31_USDJPY.png</code>. Each card tells you the exact filename it is looking for. Don't worry about getting the name perfect — <code>publish.ps1</code> tidies it up.</li>
     <li>Click <b>Add a week</b>, fill the form, press <b>Generate</b>. Copy what appears.</li>
     <li>Open this file in Notepad. Near the top you will see <code>===== NEWEST WEEK GOES HERE =====</code>. Paste directly under that line and save.</li>
-    <li>Refresh. Same page, same links, one more week.</li>
+    <li>Double-click <b>publish.bat</b>. It checks the file, fixes the chart filenames, and puts the week live. Refresh in a minute.</li>
     <li><b>Two links, one file.</b> Give the class the plain address. Keep the same address with <code>#edit</code> on the end for yourself — that is the only place Present, Add a week and Labels appear. Bookmark both.</li>
     <li><b>For class:</b> open your <code>#edit</code> link, filter to one pair, then press <b>Present</b>. Arrow keys move, Esc leaves. The class sees a clean page with search and filters and nothing to break.</li>
   </ol>
