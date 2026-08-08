@@ -325,9 +325,86 @@ function Test-Journal {
     }
     if ($nearDupes -eq 0) { SayOk 'No two labels differ only by case or punctuation.' }
 
+    # --- weekly asset ranking (optional) ------------------------------------
+    # One row per line by convention, so the row is checked as a line: it keeps
+    # the message specific ("row 'US30' has no grade") and survives the columns
+    # being reordered or re-spaced.
+    # The models the guide actually defines, so a ranking cannot cite one that
+    # is not there - a student pressing WFM-7 would get nothing.
+    $knownWfm = @{}
+    foreach ($m in [regex]::Matches($data, 'id:\s*"(WFM-\d+)"')) { $knownWfm[$m.Groups[1].Value.ToUpper()] = $true }
+    if ($knownWfm.Count -gt 0) { SayOk "$($knownWfm.Count) WFM models defined in the guide." }
+
+    # Three kinds of row now carry `instrument:` - audit, scorecard and ranking.
+    # They are told apart by a field only that kind has, rather than by which
+    # array they sit in, so re-ordering the blocks cannot confuse the check.
+    $rankRows = @([regex]::Matches($data, '(?m)^.*\binstrument:\s*"((?:[^"\\]|\\.)*)".*$'))
+    $rankBad  = 0
+    $seen     = @{ audit = 0; scorecard = 0; ranking = 0 }
+    foreach ($m in $rankRows) {
+        $line = $m.Value
+        $inst = $m.Groups[1].Value
+        $rln  = Get-LineNumber -Text $data -Index $m.Index -Offset $lineOffset
+        $shown = if ([string]::IsNullOrWhiteSpace($inst)) { '(blank)' } else { $inst }
+
+        if ($line -match '\bprojection:\s*') {
+            $kind = 'audit';     $need = @('rank', 'bias', 'grade', 'projection')
+        } elseif ($line -match '\bresult:\s*') {
+            $kind = 'scorecard'; $need = @('tue', 'wed', 'model', 'target', 'status', 'result')
+        } else {
+            $kind = 'ranking';   $need = @('wfm', 'direction', 'quality', 'grade')
+        }
+        $seen[$kind]++
+
+        if ([string]::IsNullOrWhiteSpace($inst)) {
+            $rankBad++
+            $script:problems += "Line ${rln}: a $kind row has a blank instrument."
+            SayBad "Line ${rln}: a $kind row has a blank instrument."
+        }
+        foreach ($field in $need) {
+            # values may be quoted or, for the audit scores, a bare number
+            if ($line -notmatch ('\b' + $field + ':\s*("|\d)')) {
+                $rankBad++
+                $script:problems += "Line ${rln}: $kind row '$shown' has no $field."
+                SayBad "Line ${rln}: $kind row '$shown' has no $field."
+            }
+        }
+        # Bullish/Bearish/Neutral is the ranking's rule. The audit writes its
+        # view as "Long" in the same spirit, and is free text on purpose.
+        if ($kind -eq 'ranking') {
+            $dm = [regex]::Match($line, 'direction:\s*"((?:[^"\\]|\\.)*)"')
+            if ($dm.Success -and $dm.Groups[1].Value -cnotin @('Bullish', 'Bearish', 'Neutral')) {
+                $rankBad++
+                $script:problems += "Line ${rln}: ranking row '$shown' direction is '$($dm.Groups[1].Value)'."
+                SayBad "Line ${rln}: ranking row '$shown' direction is '$($dm.Groups[1].Value)' - must be Bullish, Bearish or Neutral."
+            }
+        }
+        # Both `wfm:` (ranking) and `model:` (scorecard) cite the guide.
+        $wm = [regex]::Match($line, '\b(?:wfm|model):\s*"((?:[^"\\]|\\.)*)"')
+        if ($wm.Success -and $knownWfm.Count -gt 0) {
+            foreach ($cite in [regex]::Matches($wm.Groups[1].Value, 'WFM-\d+')) {
+                if (-not $knownWfm.ContainsKey($cite.Value.ToUpper())) {
+                    SayWarn "Line ${rln}: $kind row '$shown' cites $($cite.Value), which the WFM guide does not define."
+                }
+            }
+        }
+        $gm = [regex]::Match($line, 'grade:\s*"((?:[^"\\]|\\.)*)"')
+        if ($gm.Success -and [string]::IsNullOrWhiteSpace($gm.Groups[1].Value)) {
+            SayWarn "Line ${rln}: $kind row '$shown' has an empty grade - the badge will be blank."
+        }
+    }
+    if ($rankRows.Count -gt 0 -and $rankBad -eq 0) {
+        SayOk "$($seen.audit) audit, $($seen.scorecard) scorecard and $($seen.ranking) ranking row(s), all complete."
+    }
+
     # --- weeks and pairs ----------------------------------------------------
-    $weekMatches = @([regex]::Matches($data, 'id:\s*"((?:[^"\\]|\\.)*)"'))
-    $pairMatches = @([regex]::Matches($data, 'pair:\s*"((?:[^"\\]|\\.)*)"'))
+    # Only from `const WEEKS` onward: WFM_MODELS above it also carries `id:`
+    # fields, and without this every model reads as a malformed week. Indexes
+    # stay in $data coordinates so the reported line numbers remain right.
+    $weeksAt = $mask.IndexOf('WEEKS')
+    if ($weeksAt -lt 0) { $weeksAt = 0 }
+    $weekMatches = @([regex]::Matches($data, 'id:\s*"((?:[^"\\]|\\.)*)"')   | Where-Object { $_.Index -gt $weeksAt })
+    $pairMatches = @([regex]::Matches($data, 'pair:\s*"((?:[^"\\]|\\.)*)"') | Where-Object { $_.Index -gt $weeksAt })
 
     if ($weekMatches.Count -eq 0) {
         $script:problems += 'No weeks found in the WEEKS array.'

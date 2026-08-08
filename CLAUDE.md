@@ -91,6 +91,7 @@ The hash is a set of `/`-separated tokens, in any order:
     #edit             my tools: Present, Add a week, Labels
     #2026-W32         class view, opening on that week
     #edit/2026-W32    both
+    #wfm              the six weekly flow models, as its own page
 
 The week is written back on every change (`syncHash`, via `replaceState` so it
 doesn't stack a history entry per Prev/Next), so the address bar always names
@@ -120,6 +121,157 @@ here, N matches elsewhere" hand-off still works.
 
 The week heading is drawn only in all-weeks view — on a single week the pager
 already names it.
+
+## The six weekly flow models
+
+`const WFM_MODELS` and `const WFM_TREE`, at the top with the other data. This is
+the standing reference behind the WFM column in each week's ranking — the six
+models, their day-by-day flow, the key recognition for each, and the
+Tuesday/Wednesday decision tree.
+
+A **tab high on the page, above the pager**, opens it as **a page of its own at
+`#wfm`** — explanations only, nothing of the record. The models are the frame
+you read every week through, so they sit above the week you happen to be on.
+
+It is a page, not an expander: `#wfmpage` is a fixed overlay in the same shape
+as Present mode, shown by `body.wfmmode`. The record stays put underneath rather
+than being torn down and rebuilt on the way back. The tab is a real `<a
+href="#wfm">`, so it can be opened in a new tab, and `#wfm` can be handed to
+students as its own address — landing directly on it works. Esc and **Back to
+the record** both leave, and the browser Back button works because the hash is
+the navigation. It is visible in class mode, since students are who it is for.
+
+Because it lives outside `render()`, nothing re-renders underneath it, so it is
+built once at load. `state.wfm` exists only so `syncHash` knows the hash names
+the page rather than the week beneath it.
+
+A model needs `id` (`WFM-n`), `name`, `colour`, `flow` (array of steps, drawn
+with arrows between), `tell`, and optionally `note` and `primary:true`.
+
+In a week's ranking, a WFM cell naming models the guide defines becomes a
+button: pressing it goes to the models page and gold-rings that model, so a
+student reading the table can ask "what is WFM-4?" from where they are. A cell
+naming two — `WFM-1 → WFM-6` — rings both. `publish.ps1` warns if a ranking
+cites a `WFM-n` the guide doesn't define.
+
+**Deliberately no "examples this week"** in the guide, though the source PDF has
+them. They go stale the moment a new week lands, and the ranking already records
+which instrument expressed which model, week by week.
+
+Note for `publish.ps1`: the week scan is anchored to `const WEEKS`, because
+`WFM_MODELS` also carries `id:` fields and every model would otherwise be read
+as a malformed week.
+
+## The three week tabs
+
+Each week can carry three collapsed tabs, in this order, above the pair cards:
+
+1. **Post-market audit** (`audit`) — the Tuesday ranking as it was given,
+   reviewed once the week closed. This is the name on the source document.
+2. **Result scorecard** (`scorecard`) — how it actually settled, scored.
+3. **Weekly asset ranking** (`ranking`) — the finished verdict.
+
+They are chronological on purpose, and the first two are kept as two records
+rather than merged into one: the teaching value is in reading the call against
+the outcome, which needs both to survive separately.
+
+**On the names.** "Post-market audit" is the heading on the source document,
+so it belongs to the first table. `checkpoint` is a *date field* inside that
+document ("Forecast checkpoint: Tuesday, 4 August"), not the table's name —
+don't promote it back into a title. "Result scorecard" is a name I chose,
+because the second table arrived with no heading of its own; if a real title
+turns up, use that instead.
+
+All three share `tabBlock()` and the `.wk-tbl` table styling, and all are shut
+by default with a summary worth reading shut. Open/closed lives in
+`state.tabs[key]`, so every week's copy of a tab moves together as you page
+through the record — which is what makes comparing the same tab across weeks
+work.
+
+```js
+  audit: {
+    checkpoint: "Tuesday, 4 August",
+    rows: [
+      { rank:"#1", instrument:"Bitcoin", bias:"Long", grade:"A+", projection:"64,000 → 64,300–64,350" }
+    ]
+  },
+  scorecard: {
+    rows: [
+      { instrument:"Gold", tue:84, wed:94, model:"WFM-2", target:"PWH", status:"Delivered", result:"Win" }
+    ]
+  },
+```
+
+- The audit's `rank` is **written in**, not taken from the array order,
+  because not every row is a rank — `"Macro"` is a standing row, not fifth
+  place.
+- `bias` there is free text and is **not** held to Bullish/Bearish/Neutral —
+  it is written `"Long"` and `"Bearish"` in the same column. It shows exactly
+  as given; only the colour reads the meaning (`viewClass`). Same for `grade`,
+  which runs to `"A / strong model"`.
+- `tue` and `wed` are numbers, so the Tue→Wed move can be drawn. That delta is
+  the most telling thing in the audit and is invisible unless drawn.
+- `result` colours by meaning too (`resultClass`): Win green, Moderate grey,
+  a Loss red.
+- `model` goes through `wfmBadge()`, so audit rows link to the models page
+  exactly as ranking rows do.
+
+The audit does **not** fold on a phone — seven short columns, and the point is
+reading Tue against Wed on one line, so it scrolls inside its own card while
+the page stays put. The audit and the ranking both fold.
+
+Note for `publish.ps1`: all three row types carry `instrument:`, so they are
+told apart by a field only that kind has (`projection:` → audit, `result:`
+→ scorecard, otherwise ranking) rather than by which array they sit in.
+
+## Weekly asset ranking
+
+Optional per week. A week without a `ranking` array simply doesn't draw one.
+
+```js
+  ranking: [
+    { instrument:"GOLD",   wfm:"WFM-1",         direction:"Bullish", quality:"Exceptional", grade:"A+" },
+    { instrument:"US30",   wfm:"WFM-1 → WFM-6", direction:"Bullish", quality:"Strong",      grade:"A"  }
+  ],
+```
+
+It sits above the pair cards as a **collapsed bar**, one line high, reading
+`▶ WEEKLY ASSET RANKING · 8 instruments · 4 graded A+`. Clicking it opens the
+full table. It is reference rather than the week's story, and the pair cards
+are what the class is there for, so it stays shut until asked for — but the
+bar still carries the count and the A+ tally, so it is worth reading closed.
+
+Open, it is a real `<table>` using my column names — Rank, Instrument,
+Primary WFM, Direction, WFM Quality, Grade.
+
+**It must stay a `<table>`.** It was first built as a stack of `div`s each
+with its own `display:grid`; every row then sized its own columns, so the
+badges and text staggered from row to row and the thing looked broken. One
+table shares column widths across all rows, which is the whole point. Quality
+carries `width:100%` so it absorbs the slack and the other columns shrink to
+their content.
+
+Open/shut is held in `state.rankOpen`, not left to the native `<details>`
+toggle, so it survives a re-render and so every week's table in the all-weeks
+list opens and shuts together.
+
+- **Rank is the array order**, not a written-in number, so the two can never
+  disagree. First row is rank 1.
+- `direction` is exactly `Bullish`, `Bearish` or `Neutral` — same rule as
+  `bias`, and it reuses the same green/red chips.
+- `wfm` and `quality` are free text. Reproduce them exactly as I give them,
+  including an arrow like `WFM-1 → WFM-6`. Don't expand "WFM" into words —
+  it is my teacher's term and I have not defined it.
+- `grade` drives the only other colour: the first letter picks the badge
+  (A ink, B muted, C faint, anything else outlined), and exactly `A+` earns
+  the gold left edge. **A new grade needs no code and no map.**
+- An instrument that also has a `pairs` block that week renders as a button
+  through to it, working exactly like the Pair dropdown — press again to
+  clear. Instruments with no block that week are plain text, which is normal:
+  the ranking covers more instruments than the record has day-by-day cards.
+
+On a phone the six columns fold to three lines rather than scrolling
+sideways.
 
 ## Day labels — the important rule
 
@@ -192,6 +344,8 @@ changed: `Add label: Midweek Reversal`, `Fix chart path casing`.
 - the data block parses — balanced braces, closed quotes, and specifically a
   missing comma between week blocks, which renders the page blank
 - every day label matches a key in `LABELS` exactly
+- every ranking row has all five fields, a non-blank instrument, and a
+  `direction` of exactly `Bullish`, `Bearish` or `Neutral`
 - every pair has exactly five day rows, `Mon`–`Fri`, in order
 - `bias` is exactly `Bullish`, `Bearish` or `Neutral`
 - week ids are `YYYY-Wnn` and not duplicated

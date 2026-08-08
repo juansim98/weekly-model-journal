@@ -67,6 +67,78 @@ const LABELS = {
 };
 
 
+/* ---- THE SIX WEEKLY FLOW MODELS ----------------------------
+   The standing reference behind the WFM column in each week's
+   ranking. It sits in a closed tab above the record so a student
+   can refresh their memory without leaving the page.
+
+   Deliberately no "examples this week" here — those go stale the
+   moment a new week lands, and the ranking already records which
+   instrument expressed which model, week by week.
+   ------------------------------------------------------------ */
+const WFM_MODELS = [
+  {
+    id:"WFM-1", colour:"#17408B", primary:true,
+    name:"Monday Accumulation → Expansion",
+    flow:["Monday: establishes dealing range","Tuesday: expansion begins",
+          "Wednesday: continuation / repricing","Thursday: external liquidity delivery",
+          "Friday: final objective or profit-taking"],
+    tell:"Displacement + acceptance outside Monday range",
+    note:"The mainstream, preferred model — the one we actively hunt every week. It does NOT require Monday High or Low to be swept first: if price breaks the Monday range with strong displacement and accepts outside it, that alone can confirm WFM-1."
+  },
+  {
+    id:"WFM-2", colour:"#B4470E",
+    name:"Monday Liquidity Raid → Reversal",
+    flow:["Monday Low swept","Rejection","Bullish MSS","Price re-enters Monday range",
+          "Monday High becomes draw","External buy-side liquidity"],
+    tell:"Sweep + immediate rejection + MSS",
+    note:"The classic manipulation model. The flow above is the bullish version; the bearish one is its mirror. The key word is RAID, not breakout."
+  },
+  {
+    id:"WFM-3", colour:"#6D3A8E",
+    name:"Early-Week Manipulation → True Expansion",
+    flow:["Monday range","Tuesday false expansion","Liquidity engineering",
+          "Structural reversal","Wed–Fri genuine expansion"],
+    tell:"False expansion followed by displacement in the true direction",
+    note:"The market appears to begin the week's expansion one way, attracts positioning, then reverses and sets the actual weekly trend. Particularly useful when Tuesday looks convincing but fails to obtain HTF acceptance."
+  },
+  {
+    id:"WFM-4", colour:"#9B4A5A",
+    name:"Midweek Reversal",
+    flow:["Monday range","Tuesday expansion","Tue/Wed liquidity target reached","MSS",
+          "Wednesday/Thursday reversal","Friday delivery opposite direction"],
+    tell:"Objective reached + HTF MSS / CHOCH",
+    note:"Differs from WFM-2 because the first move is not necessarily false. The market may genuinely expand Monday–Tuesday, reach an important weekly objective, and only then reverse."
+  },
+  {
+    id:"WFM-5", colour:"#5B6B80",
+    name:"Weekly Compression → Late Breakout",
+    flow:["Monday range","Tuesday compression","Wednesday compression",
+          "Thursday/Friday breakout"],
+    tell:"Failure to gain early acceptance outside Monday range",
+    note:"No proper Tuesday expansion — price stays trapped around the Monday dealing range. Usually downgrade this one early: don't keep expecting a WFM-1 Tuesday expansion once Tuesday and Wednesday have failed to deliver."
+  },
+  {
+    id:"WFM-6", colour:"#0D6B62",
+    name:"Early Objective → Late-Week Rebalancing",
+    flow:["Monday range","Tue/Wed strong expansion","Weekly liquidity objective reached",
+          "Thursday/Friday profit-taking / retracement"],
+    tell:"Weekly liquidity objective already delivered",
+    note:"The weekly directional call may be completely correct — the move simply finishes earlier than Friday. This is what protects us from chasing an already-completed weekly move."
+  }
+];
+
+/* The decision tree, asked on Tuesday/Wednesday. */
+const WFM_TREE = [
+  { q:"Has price broken Monday H/L with displacement AND acceptance?", a:"WFM-1" },
+  { q:"Has price swept Monday H/L but rejected immediately and MSS'd opposite?", a:"WFM-2" },
+  { q:"Did the apparent early breakout fail before a genuine opposite expansion developed?", a:"WFM-3" },
+  { q:"Did the market make a genuine early expansion, reach significant liquidity and then reverse midweek?", a:"WFM-4" },
+  { q:"If neither side develops — still trapped around the Monday range by Wednesday?", a:"WFM-5" },
+  { q:"If the major weekly target is already completed — external liquidity delivered by Wed/Thu?", a:"WFM-6" }
+];
+
+
 const WEEKS = [
 
 /* ===== NEWEST WEEK GOES HERE ===== */
@@ -75,6 +147,47 @@ const WEEKS = [
   dates: "3–7 August 2026",
   theme: "",
   note: "",
+  /* The post-market audit: the Tuesday ranking as it was given, reviewed after
+     the week closed. `checkpoint` is when the call was made, not the name of
+     the thing. `rank` is written in rather than taken from the order, because
+     not every row is a rank — "Macro" is a standing row, not fifth place.
+     `bias` and `grade` are free text, shown exactly as given and only
+     coloured by meaning. */
+  audit: {
+    checkpoint: "Tuesday, 4 August",
+    rows: [
+      { rank:"#1",    instrument:"Bitcoin",    bias:"Long",    grade:"A+",              projection:"64,000 → 64,300–64,350 → 65,200–65,350" },
+      { rank:"#2",    instrument:"GBPUSD",     bias:"Long",    grade:"A",               projection:"1.3465 → 1.3478 → 1.3500" },
+      { rank:"#3",    instrument:"Nasdaq 100", bias:"Long",    grade:"A / strong model", projection:"29,150 → 29,300+" },
+      { rank:"#4",    instrument:"EURUSD",     bias:"Long",    grade:"B+",              projection:"1.1530 → 1.1539" },
+      { rank:"Macro", instrument:"DXY",        bias:"Bearish", grade:"A",               projection:"USD liquidity lower" }
+    ]
+  },
+
+  /* How it actually settled. Scores are numbers so the Tue→Wed move can be
+     shown; everything else is free text and recorded as given. */
+  scorecard: {
+    rows: [
+      { instrument:"Gold",   tue:84, wed:94, model:"WFM-2", target:"PWH",         status:"Delivered",     result:"Win" },
+      { instrument:"Nasdaq", tue:92, wed:91, model:"WFM-2", target:"Weekly BSL",  status:"Delivered",     result:"Win" },
+      { instrument:"EURUSD", tue:86, wed:90, model:"WFM-4", target:"PWH",         status:"Delivered",     result:"Win" },
+      { instrument:"BTC",    tue:88, wed:81, model:"WFM-2", target:"65K",         status:"Partial",       result:"Moderate" },
+      { instrument:"GBPUSD", tue:84, wed:76, model:"WFM-4", target:"Monday High", status:"Delivered Wed", result:"Win" }
+    ]
+  },
+
+  /* Order is the rank — first row is rank 1. Instruments that also have a
+     pair block below are clickable in the table. */
+  ranking: [
+    { instrument:"GOLD",    wfm:"WFM-1",         direction:"Bullish", quality:"Exceptional",                grade:"A+" },
+    { instrument:"NASDAQ",  wfm:"WFM-1",         direction:"Bullish", quality:"Exceptional",                grade:"A+" },
+    { instrument:"S&P 500", wfm:"WFM-1",         direction:"Bullish", quality:"Exceptional",                grade:"A+" },
+    { instrument:"USDCAD",  wfm:"WFM-4",         direction:"Bearish", quality:"Exceptional reversal model",  grade:"A+" },
+    { instrument:"EURUSD",  wfm:"WFM-1",         direction:"Bullish", quality:"Very strong",                 grade:"A"  },
+    { instrument:"US30",    wfm:"WFM-1 → WFM-6", direction:"Bullish", quality:"Strong",                      grade:"A"  },
+    { instrument:"BITCOIN", wfm:"WFM-1",         direction:"Bullish", quality:"Strong",                      grade:"A"  },
+    { instrument:"WTI OIL", wfm:"WFM-1 → WFM-6", direction:"Bearish", quality:"Strong but completed early",  grade:"A-" }
+  ],
   pairs: [
     {
       pair: "GOLD", bias: "Bullish", range: "",
@@ -243,6 +356,151 @@ const WEEKS = [
   .week-theme{margin-left:auto;font-family:var(--mono);font-size:11px;letter-spacing:.09em;
     text-transform:uppercase;border:1px solid var(--ink);padding:3px 9px;border-radius:2px}
   .week-note{font-size:14px;color:var(--muted);margin:-8px 0 18px;max-width:74ch}
+
+  /* ---- the six weekly flow models ----
+     A tab high on the page that opens a page of its own at #wfm, rather than
+     an expander that pushes the record down. It is a real link, so it can be
+     opened in a new tab and handed to students as its own address, and it is
+     visible in class mode because students are exactly who it is for. */
+  .wfm-tabwrap{max-width:1120px;margin:0 auto;padding:16px 24px 0}
+  .wfm-tab{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--gold);
+    border-radius:4px;padding:11px 16px;text-decoration:none;color:inherit;
+    transition:border-color .12s ease, box-shadow .12s ease}
+  .wfm-tab:hover{border-color:var(--faint);border-left-color:var(--gold);
+    box-shadow:0 2px 10px rgba(24,36,72,.10)}
+  .wfm-tab-t{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ink);font-weight:600}
+  .wfm-tab-s{font-size:12.5px;color:var(--muted)}
+  .wfm-tab-go{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    color:var(--muted);margin-left:auto;white-space:nowrap}
+  .wfm-tab:hover .wfm-tab-go{color:var(--ink)}
+
+  /* The page itself. Fixed overlay with its own scroll, the same shape as
+     Present mode — the record stays put underneath rather than being torn
+     down and rebuilt when you come back. */
+  #wfmpage{position:fixed;inset:0;z-index:70;background:var(--paper);
+    display:none;overflow:auto;-webkit-overflow-scrolling:touch}
+  body.wfmmode #wfmpage{display:block}
+  body.wfmmode{overflow:hidden}
+  .wfm-head{position:sticky;top:0;z-index:2;background:var(--paper);
+    border-bottom:1px solid var(--rule);padding:14px 24px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .wfm-head-in{max-width:1120px;margin:0 auto;width:100%;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .wfm-h1{font-size:19px;font-weight:700;letter-spacing:-.01em}
+  .wfm-h1 span{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--faint);font-weight:400;margin-top:2px}
+  .wfm-body{max-width:1120px;margin:0 auto;padding:20px 24px 60px}
+  .wfm-lead{font-size:13.5px;color:var(--muted);margin:0 0 14px;max-width:88ch}
+  .wfm-lead b{color:var(--ink)}
+  .wfm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:12px}
+  .wfm-card{border:1px solid var(--rule);border-radius:3px;padding:12px 14px;
+    scroll-margin-top:14px;transition:box-shadow .15s ease}
+  .wfm-card.hit{box-shadow:0 0 0 2px var(--gold)}
+  .wfm-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px}
+  .wfm-id{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.05em;
+    color:#fff;padding:2px 7px;border-radius:2px;flex:none}
+  .wfm-name{font-size:13px;font-weight:600;line-height:1.35}
+  .wfm-flag{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--gold);border:1px solid var(--gold);border-radius:2px;padding:1px 5px;flex:none}
+  .wfm-flow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:10px}
+  .wfm-step{font-size:11px;color:var(--muted);background:var(--paper);
+    border-radius:2px;padding:2px 7px;line-height:1.4}
+  .wfm-arrow{color:var(--faint);font-size:10px}
+  .wfm-tell{border-top:1px dashed var(--rule);padding-top:8px;font-size:12.5px;color:var(--ink)}
+  .wfm-tell span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--faint);margin-bottom:3px}
+  .wfm-note{font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.55}
+  .wfm-tree{margin-top:14px;border:1px solid var(--rule);border-radius:3px;
+    padding:12px 14px;background:#F7F8FA}
+  .wfm-tree h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--faint);font-weight:400;margin:0 0 9px}
+  .wfm-q{display:flex;align-items:baseline;gap:10px;padding:5px 0;font-size:12.5px;color:var(--muted)}
+  .wfm-q + .wfm-q{border-top:1px solid var(--rule)}
+  .wfm-q b{font-family:var(--mono);font-size:10.5px;color:var(--ink);flex:none;margin-left:auto}
+  button.rank-wfm{cursor:pointer}
+  button.rank-wfm:hover{border-color:var(--gold);color:var(--ink)}
+
+  /* ---- weekly asset ranking ----
+     Sits above the pair cards as the week's summary. A table, because it is
+     one: six columns of the same shape every week, and the eye compares down
+     a column. Colour is spent only where it means something — direction
+     reuses the bull/bear chips, and the gold edge marks the A+ rows, which
+     are the ones worth teaching from. */
+  .ranking{background:var(--card);border:1px solid var(--rule);border-radius:4px;
+    margin-bottom:14px;overflow:hidden}
+  /* Closed by default: it is reference, not the week's story, and the pair
+     cards below are what the class is here for. The bar still carries the
+     count and the A+ tally, so shut it is worth reading. */
+  .rank-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;
+    list-style:none;user-select:none}
+  .rank-bar::-webkit-details-marker{display:none}
+  .rank-bar:hover{background:#F7F8FA}
+  .ranking[open] .rank-bar{border-bottom:1px solid var(--rule)}
+  .rank-chev{flex:none;font-size:9px;color:var(--faint);transition:transform .12s ease}
+  .ranking[open] .rank-chev{transform:rotate(90deg)}
+  .rank-title{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ink);font-weight:600}
+  .rank-meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-left:auto}
+
+  /* One table, not a stack of per-row grids — that is what makes the columns
+     line up. Quality takes width:100% so it absorbs the slack and every other
+     column shrinks to its content. */
+  /* Shared by all three week tables — audit, scorecard and ranking. One table
+     each, never a stack of grids: that is what keeps the columns aligned. */
+  .wk-tbl{width:100%;border-collapse:collapse}
+  .wk-tbl th{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;font-weight:400;
+    text-transform:uppercase;color:var(--faint);text-align:left;
+    padding:8px 12px;background:#F7F8FA;border-bottom:1px solid var(--rule);white-space:nowrap}
+  .wk-tbl td{padding:8px 12px;border-top:1px solid var(--rule);vertical-align:middle}
+  .wk-tbl tbody tr:first-child td{border-top:0}
+  .wk-tbl th:first-child,.wk-tbl td:first-child{padding-left:16px;width:1%;white-space:nowrap}
+  .wk-tbl th:last-child,.wk-tbl td:last-child{padding-right:16px;width:1%;white-space:nowrap}
+  .wk-tbl .nowrap{width:1%;white-space:nowrap}
+  .wk-tbl .grow{width:100%}
+  .wk-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .rank-tbl th:first-child,.rank-tbl td:first-child,
+  .rank-tbl th:last-child,.rank-tbl td:last-child{text-align:right}
+  .pma-tbl th:last-child,.pma-tbl td:last-child{text-align:left;width:100%}
+  .sc-tbl th:last-child,.sc-tbl td:last-child{text-align:right}
+
+  /* post-market audit: the projected levels are the point, so mono */
+  .pma-rank{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.04em}
+  .pma-proj{font-family:var(--mono);font-size:11.5px;color:var(--ink);line-height:1.5}
+  .pma-note{font-size:12.5px;color:var(--muted);padding:10px 16px;border-top:1px solid var(--rule);
+    background:#F7F8FA}
+
+  /* result scorecard: two conviction scores and where they went between them */
+  .sc-score{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--ink)}
+  .sc-score.dim{color:var(--faint);font-weight:400}
+  .au-delta{font-family:var(--mono);font-size:9.5px;margin-left:4px}
+  .au-up{color:var(--bull)} .au-down{color:var(--bear)} .au-flat{color:var(--faint)}
+  .sc-txt{font-size:12.5px;color:var(--muted)}
+  .sc-res{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;padding:2px 7px;border-radius:2px;color:#fff;background:var(--faint)}
+  .sc-res.win{background:var(--bull)}
+  .sc-res.loss{background:var(--bear)}
+  .sc-res.mid{background:var(--muted)}
+  .rank-n{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--faint)}
+  .rank-inst{font-family:var(--mono);font-size:13.5px;font-weight:600;letter-spacing:.02em;
+    color:var(--ink);white-space:nowrap}
+  button.rank-inst{background:0;border:0;padding:0;cursor:pointer;font-family:var(--mono);
+    text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:3px}
+  button.rank-inst:hover{text-decoration-color:var(--gold)}
+  .rank-wfm{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.03em;
+    color:var(--muted);border:1px solid var(--rule);border-radius:2px;padding:2px 6px;white-space:nowrap}
+  .rank-tbl .bias{display:inline-block;font-size:9.5px;padding:2px 7px}
+  .rank-q{font-size:13px;color:var(--muted);width:100%}
+  .rank-g{display:inline-block;min-width:30px;font-family:var(--mono);font-size:10.5px;
+    font-weight:600;letter-spacing:.03em;text-align:center;padding:2px 5px;border-radius:2px;
+    color:#fff;background:var(--faint)}
+  .g-a .rank-g{background:var(--ink)}
+  .g-b .rank-g{background:var(--muted)}
+  .g-c .rank-g{background:var(--faint)}
+  .g-d .rank-g{background:var(--card);color:var(--muted);box-shadow:inset 0 0 0 1px var(--rule)}
+  .g-top td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
+  .g-top .rank-n{color:var(--gold)}
 
   .pair{background:var(--card);border:1px solid var(--rule);border-radius:4px;margin-bottom:14px;overflow:hidden}
   .pair-head{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--rule)}
@@ -432,8 +690,44 @@ const WEEKS = [
     .dayrow{grid-template-columns:1fr}
     /* No hover on touch, and the lift only fights the tap highlight. */
     .cell:hover{transform:none;box-shadow:none}
+    /* Six columns will not fit a phone. Drop out of table layout and fold each
+       row into three lines rather than let it scroll sideways. Alignment
+       between rows stops mattering once each row is its own little block. */
+    .rank-tbl thead{display:none}
+    .rank-tbl,.rank-tbl tbody,.rank-tbl tr,.rank-tbl td{display:block}
+    .rank-tbl tr{display:grid;grid-template-columns:26px 1fr auto;gap:4px 10px;
+      padding:11px 14px;border-top:1px solid var(--rule)}
+    .rank-tbl tbody tr:first-child{border-top:0}
+    .rank-tbl td,.rank-tbl tbody tr:first-child td{padding:0;border:0}
+    .rank-tbl td:first-child,.rank-tbl td:last-child{padding:0;width:auto}
+    .rank-tbl td:nth-child(1){grid-row:1;grid-column:1;text-align:right}
+    .rank-tbl td:nth-child(2){grid-row:1;grid-column:2}
+    .rank-tbl td:nth-child(6){grid-row:1;grid-column:3;text-align:right}
+    .rank-tbl td:nth-child(3){grid-row:2;grid-column:2}
+    .rank-tbl td:nth-child(4){grid-row:2;grid-column:3;text-align:right}
+    .rank-tbl td:nth-child(5){grid-row:3;grid-column:2 / span 2}
+    .g-top td:first-child{box-shadow:none}
+    .rank-tbl tr.g-top{box-shadow:inset 3px 0 0 var(--gold)}
+
+    /* The audit folds the same way — five columns, one of them long. */
+    .pma-tbl thead{display:none}
+    .pma-tbl,.pma-tbl tbody,.pma-tbl tr,.pma-tbl td{display:block}
+    .pma-tbl tr{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;
+      padding:11px 14px;border-top:1px solid var(--rule)}
+    .pma-tbl tbody tr:first-child{border-top:0}
+    .pma-tbl td,.pma-tbl tbody tr:first-child td{padding:0;border:0;width:auto}
+    .pma-tbl td:nth-child(1){grid-row:1;grid-column:1}
+    .pma-tbl td:nth-child(2){grid-row:1;grid-column:2}
+    .pma-tbl td:nth-child(4){grid-row:1;grid-column:3;text-align:right}
+    .pma-tbl td:nth-child(3){grid-row:2;grid-column:1 / span 3}
+    .pma-tbl td:nth-child(5){grid-row:3;grid-column:1 / span 3}
+    .pma-tbl tr.g-top{box-shadow:inset 3px 0 0 var(--gold)}
+    /* The scorecard does not fold: seven short columns, and the whole point is
+       reading Tue against Wed on one line. It scrolls inside its own card
+       instead, so the page never moves sideways. */
   }
   @media print{ .controls,.filterbar,.howto,#present,#builder{display:none !important}
+    .ranking{break-inside:avoid}
     .pager .pgbtn,.pager .weekpick{display:none !important}
     body{background:#fff} .pair{break-inside:avoid} }
 </style>
@@ -464,6 +758,16 @@ const WEEKS = [
     <span class="modetag">Editing</span>
     <span class="count" id="count"></span>
   </div>
+</div>
+
+<!-- Sits above the pager on purpose: the models are the frame you read every
+     week through, so they come before the week you happen to be looking at. -->
+<div class="wfm-tabwrap">
+  <a class="wfm-tab" href="#wfm" id="wfmTab">
+    <span class="wfm-tab-t">The six weekly flow models</span>
+    <span class="wfm-tab-s">WFM-1 &ndash; WFM-6 &middot; the models behind every ranking</span>
+    <span class="wfm-tab-go">Open &#8594;</span>
+  </a>
 </div>
 
 <div class="pager" id="pager">
@@ -501,10 +805,22 @@ const WEEKS = [
     <li><b>Press a day to compare it.</b> Click any square in a Mon–Fri strip and the page gathers every week holding a day worded exactly the same, newest-first — that is how you show the class the same setup repeating across months. <b>Clear</b> returns you to one week. Search, Pair and Bias narrow whatever is on screen.</li>
     <li><b>Charts open full screen.</b> Click or tap any chart to enlarge it, tap again to zoom to full size and drag around. Esc or Close returns. This is the only way the charts are readable on a phone.</li>
     <li><b>Two links, one file.</b> Give the class the plain address — it always opens on the newest week. Keep the same address with <code>#edit</code> on the end for yourself; that is the only place Present, Add a week and Labels appear. Bookmark both.</li>
+    <li><b>The six models.</b> The tab at the top opens <b>The Six Weekly Flow Models</b> as its own page — the six WFM models, what each looks like day by day, and the decision tree. Esc or <b>Back to the record</b> returns. Its address ends in <code>#wfm</code>, so you can give the class that link on its own. Inside a week's ranking, pressing a WFM badge opens this page at that model.</li>
     <li><b>Linking to one week.</b> The address bar follows the week you are on, so to send the class a particular week — <em>"this is the one to study"</em> — just copy it while that week is on screen. It ends in <code>#2026-W32</code> and will still open that same week months later, after newer ones have gone in.</li>
     <li><b>For class:</b> open your <code>#edit</code> link, filter to one pair, then press <b>Present</b>. Arrow keys move, Esc leaves. The class sees a clean page with search and filters and nothing to break.</li>
   </ol>
 </section>
+
+<!-- ============ THE SIX WEEKLY FLOW MODELS — page at #wfm ============ -->
+<div id="wfmpage" role="dialog" aria-modal="true" aria-label="The six weekly flow models">
+  <div class="wfm-head">
+    <div class="wfm-head-in">
+      <div class="wfm-h1">The Six Weekly Flow Models<span>Kingdom Crest Capital &middot; WFM reference</span></div>
+      <button class="btn" id="wfmBack" style="margin-left:auto">&#8592;&nbsp;Back to the record</button>
+    </div>
+  </div>
+  <div class="wfm-body" id="wfmBody"></div>
+</div>
 
 <!-- ============ CHART LIGHTBOX ============ -->
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Chart">
@@ -590,7 +906,8 @@ const WEEKS = [
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const DAYS = ["Mon","Tue","Wed","Thu","Fri"];
 let labels = Object.assign({}, LABELS);   // live copy — the Labels panel edits this
-const state = {q:"",pair:"",bias:"",label:"",week:0,scope:"week"};
+const state = {q:"",pair:"",bias:"",label:"",week:0,scope:"week",wfm:false,
+               tabs:{audit:false,scorecard:false,rank:false}};
 let visible = [];   // flattened pair-weeks currently shown — drives Present mode
 
 function chartPath(week,pair){ return `Charts/${week}_${pair}.png`; }
@@ -627,6 +944,218 @@ function totalMatches(){
   return n;
 }
 
+/* ---------------- the six weekly flow models ----------------
+   Built once at load, not inside render(): it is a standing reference, the
+   same whatever week or filter is on screen. Native <details> is therefore
+   enough — nothing re-renders underneath it, so its open state looks after
+   itself and needs no entry in `state`.
+   ------------------------------------------------------------------- */
+function wfmCard(m){
+  const flow = m.flow.map(s=>`<span class="wfm-step">${esc(s)}</span>`)
+                     .join(`<span class="wfm-arrow">&#8594;</span>`);
+  return `<article class="wfm-card" id="wfm-${esc(m.id.toLowerCase())}">
+    <div class="wfm-h">
+      <span class="wfm-id" style="background:${esc(m.colour)}">${esc(m.id)}</span>
+      <span class="wfm-name">${esc(m.name)}</span>
+      ${m.primary?`<span class="wfm-flag">Primary</span>`:""}
+    </div>
+    <div class="wfm-flow">${flow}</div>
+    <div class="wfm-tell"><span>Key recognition</span>${esc(m.tell)}</div>
+    ${m.note?`<p class="wfm-note">${esc(m.note)}</p>`:""}
+  </article>`;
+}
+function buildWfm(){
+  const body=document.getElementById("wfmBody");
+  if(!body || !Array.isArray(WFM_MODELS) || !WFM_MODELS.length) return;
+  const tree = WFM_TREE.map(t=>`<div class="wfm-q">${esc(t.q)}<b>${esc(t.a)}</b></div>`).join("");
+  body.innerHTML =
+    `<p class="wfm-lead"><b>WFM-1 is the model we hunt every week.</b> WFM-2 to WFM-6 are the
+       alternative paths price takes when the mainstream model is not developing &mdash; read
+       them as the ways a week can go otherwise, not as six equal choices.</p>
+     <div class="wfm-grid">${WFM_MODELS.map(wfmCard).join("")}</div>
+     <div class="wfm-tree">
+       <h3>The decision tree &mdash; ask by Tuesday/Wednesday</h3>
+       ${tree}
+     </div>`;
+}
+
+/* Going to the models page from a WFM badge in a week's ranking. The hash is
+   the navigation — set it and the route handler does the rest — so the model
+   to ring is parked here until the page is actually up. */
+let wfmPending = [];
+function openWfm(ids){
+  wfmPending = ids || [];
+  const parts = [];
+  if(!document.body.classList.contains("classmode")) parts.push("edit");
+  parts.push("wfm");
+  location.hash = "#" + parts.join("/");
+}
+function markWfm(){
+  document.querySelectorAll(".wfm-card.hit").forEach(c=>c.classList.remove("hit"));
+  let first=null;
+  wfmPending.forEach(id=>{
+    const c=document.getElementById("wfm-"+String(id).toLowerCase());
+    if(c){ c.classList.add("hit"); if(!first) first=c; }
+  });
+  wfmPending = [];
+  const page=document.getElementById("wfmpage");
+  if(first) first.scrollIntoView({behavior:"smooth",block:"center"});
+  else if(page) page.scrollTop = 0;
+}
+function leaveWfm(){
+  const w = WEEKS[state.week];
+  const parts = [];
+  if(!document.body.classList.contains("classmode")) parts.push("edit");
+  if(state.scope!=="all" && w) parts.push(w.id);
+  location.hash = parts.length ? "#"+parts.join("/") : "#";
+}
+document.getElementById("wfmBack").addEventListener("click",leaveWfm);
+buildWfm();
+
+/* ---- weekly asset ranking ----
+   Optional: a week without a `ranking` array simply doesn't draw one. Rank is
+   the array order rather than a written-in number, so the two can never
+   disagree. Only the grade drives colour — "A+" earns the gold edge, the
+   letter picks the badge — so a new grade needs no code and no map. An
+   instrument that also has a pair block below is a button through to it. */
+/* A WFM cell becomes a button when it names models the guide actually has, so
+   a student reading the ranking can ask "what is WFM-4?" from where they are.
+   A cell naming several — "WFM-1 → WFM-6" — highlights both. */
+function wfmBadge(text){
+  const raw = String(text||"");
+  const ids = (raw.match(/WFM-\d+/gi)||[])
+    .filter(id=>WFM_MODELS.some(m=>m.id.toUpperCase()===id.toUpperCase()));
+  if(!ids.length) return `<span class="rank-wfm">${esc(raw)}</span>`;
+  return `<button type="button" class="rank-wfm" data-wfm="${esc(ids.join(","))}"
+    title="What is ${esc(ids.join(" and "))}?">${esc(raw)}</button>`;
+}
+function gradeClass(g){
+  const s = String(g||"").trim().toUpperCase();
+  const tier = {A:"g-a",B:"g-b",C:"g-c"}[s.charAt(0)] || "g-d";
+  return tier + (s==="A+" ? " g-top" : "");
+}
+/* The audit writes its view as "Long" and "Bearish" in the same column.
+   Both are shown exactly as given; only the colour reads the meaning. */
+function viewClass(v){
+  const s = String(v||"").trim().toLowerCase();
+  if(/^(long|bullish|buy)/.test(s))  return "bull";
+  if(/^(short|bearish|sell)/.test(s)) return "bear";
+  return "neutral";
+}
+function resultClass(r){
+  const s = String(r||"").trim().toLowerCase();
+  if(/^(win|delivered|hit)/.test(s))            return "win";
+  if(/^(loss|lost|miss|fail|invalid)/.test(s))  return "loss";
+  return "mid";
+}
+/* Where conviction went between Tuesday and Wednesday — the single most
+   telling number in the audit, and invisible unless it is drawn. */
+function scoreDelta(a,b){
+  if(typeof a!=="number" || typeof b!=="number") return "";
+  const d=b-a;
+  if(!d) return `<span class="au-delta au-flat">&plusmn;0</span>`;
+  return `<span class="au-delta ${d>0?"au-up":"au-down"}">${d>0?"&#9650;":"&#9660;"}${Math.abs(d)}</span>`;
+}
+
+/* ---- post-market audit ----
+   The Tuesday ranking as it was given, reviewed once the week closed. Kept
+   separate from the scorecard on purpose: the teaching value is in reading the
+   call against the outcome, which needs both to survive as their own record. */
+function auditBlock(w){
+  const a=w.audit;
+  if(!a || !Array.isArray(a.rows) || !a.rows.length) return "";
+  const rows=a.rows.map(r=>`<tr class="${gradeClass(r.grade)}">
+    <td class="pma-rank">${esc(r.rank)}</td>
+    <td class="rank-inst">${esc(r.instrument)}</td>
+    <td class="nowrap"><span class="bias ${viewClass(r.bias)}">${esc(r.bias)}</span></td>
+    <td class="nowrap"><span class="rank-g">${esc(r.grade)}</span></td>
+    <td class="pma-proj grow">${esc(r.projection)}</td>
+  </tr>`).join("");
+  const meta = (a.checkpoint ? esc(a.checkpoint)+" &middot; " : "")
+             + a.rows.length + " call" + (a.rows.length===1?"":"s");
+  return tabBlock("audit","Post-market audit",meta,
+    `<table class="wk-tbl pma-tbl">
+      <thead><tr>
+        <th scope="col">Rank</th><th scope="col">Instrument</th><th scope="col">Tuesday WFM Bias</th>
+        <th scope="col">Grade / View</th><th scope="col">Projected liquidity</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${a.checkpoint?`<p class="pma-note">The ranking as given on ${esc(a.checkpoint)}, before the week resolved. Read it against the result scorecard.</p>`:""}`);
+}
+
+/* ---- result scorecard ----
+   No heading of its own in the source, so this is a name I chose: it scores
+   conviction Tuesday against Wednesday and closes with a result. */
+function scorecardBlock(w){
+  const s=w.scorecard;
+  if(!s || !Array.isArray(s.rows) || !s.rows.length) return "";
+  const rows=s.rows.map(r=>`<tr>
+    <td class="rank-inst">${esc(r.instrument)}</td>
+    <td class="nowrap"><span class="sc-score dim">${esc(r.tue)}</span></td>
+    <td class="nowrap"><span class="sc-score">${esc(r.wed)}</span>${scoreDelta(r.tue,r.wed)}</td>
+    <td class="nowrap">${wfmBadge(r.model)}</td>
+    <td class="sc-txt grow">${esc(r.target)}</td>
+    <td class="sc-txt nowrap">${esc(r.status)}</td>
+    <td><span class="sc-res ${resultClass(r.result)}">${esc(r.result)}</span></td>
+  </tr>`).join("");
+  const wins = s.rows.filter(r=>resultClass(r.result)==="win").length;
+  const meta = `${s.rows.length} instrument${s.rows.length===1?"":"s"} &middot; ${wins} win${wins===1?"":"s"}`;
+  return tabBlock("scorecard","Result scorecard",meta,
+    `<div class="wk-scroll"><table class="wk-tbl sc-tbl">
+      <thead><tr>
+        <th scope="col">Instrument</th><th scope="col">Tue Score</th><th scope="col">Wed Score</th>
+        <th scope="col">Model</th><th scope="col">Liquidity Target</th>
+        <th scope="col">Status</th><th scope="col">Result</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`);
+}
+
+/* Every week tab is the same shape: a bar that names itself and carries a
+   summary worth reading shut, over a table. `key` is what the open/closed
+   state is filed under, so all weeks' copies of a tab move together. */
+function tabBlock(key,title,meta,inner){
+  const open = !!state.tabs[key];
+  return `<details class="ranking" data-tab="${esc(key)}"${open?" open":""}>
+    <summary class="rank-bar" data-tab="${esc(key)}">
+      <span class="rank-chev">&#9654;</span>
+      <span class="rank-title">${title}</span>
+      <span class="rank-meta">${meta}</span>
+    </summary>
+    ${inner}
+  </details>`;
+}
+function rankingBlock(w){
+  if(!Array.isArray(w.ranking) || !w.ranking.length) return "";
+  const rows = w.ranking.map((r,i)=>{
+    const linked = w.pairs.some(p=>p.pair===r.instrument);
+    const inst = linked
+      ? `<button type="button" class="rank-inst" data-pair="${esc(r.instrument)}"
+           title="Show ${esc(r.instrument)}">${esc(r.instrument)}</button>`
+      : `<span class="rank-inst">${esc(r.instrument)}</span>`;
+    return `<tr class="${gradeClass(r.grade)}">
+      <td class="rank-n">${i+1}</td>
+      <td>${inst}</td>
+      <td class="rank-wfmc">${wfmBadge(r.wfm)}</td>
+      <td class="rank-dirc"><span class="bias ${biasClass(r.direction)}">${esc(r.direction)}</span></td>
+      <td class="rank-q">${esc(r.quality)}</td>
+      <td><span class="rank-g">${esc(r.grade)}</span></td>
+    </tr>`;
+  }).join("");
+  const tops = w.ranking.filter(r=>String(r.grade||"").trim().toUpperCase()==="A+").length;
+  const meta = `${w.ranking.length} instrument${w.ranking.length===1?"":"s"}`
+             + (tops ? ` · ${tops} graded A+` : "");
+  return tabBlock("rank","Weekly asset ranking",meta,
+    `<table class="wk-tbl rank-tbl">
+      <thead><tr>
+        <th scope="col">Rank</th><th scope="col">Instrument</th><th scope="col">Primary WFM</th>
+        <th scope="col">Direction</th><th scope="col">WFM Quality</th><th scope="col">Grade</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`);
+}
+
 /* The week heading labels each group in the all-weeks list. On a single week
    the pager already says which week you are on, so it is left off rather than
    printed twice. */
@@ -638,6 +1167,9 @@ function weekSection(w,cards,showHead){
       ${w.theme?`<span class="week-theme">${esc(w.theme)}</span>`:""}
     </div>`:""}
     ${w.note?`<p class="week-note">${esc(w.note)}</p>`:""}
+    ${auditBlock(w)}
+    ${scorecardBlock(w)}
+    ${rankingBlock(w)}
     ${cards.map(p=>pairCard(w,p)).join("")}
   </section>`;
 }
@@ -865,9 +1397,36 @@ function drawFilterBar(){
        <button class="btn" id="clearFilter">Back to one week &#10005;</button>`;
 }
 document.getElementById("out").addEventListener("click",e=>{
-  const c=e.target.closest(".cell"); if(!c) return;
-  if(!c.dataset.label) return;   // wording has no family yet — nothing to match
-  setLabel(c.dataset.label);
+  // The ranking disclosure. Driven from state rather than left to the native
+  // toggle, so it survives a re-render and so every week's table in the
+  // all-weeks list opens and shuts together instead of drifting apart.
+  const s=e.target.closest("summary.rank-bar");
+  if(s){
+    e.preventDefault();
+    const key=s.dataset.tab||"rank";
+    state.tabs[key]=!state.tabs[key];
+    document.querySelectorAll(`#out details[data-tab="${key}"]`)
+            .forEach(d=>{ d.open = state.tabs[key]; });
+    return;
+  }
+  const wf=e.target.closest("button.rank-wfm[data-wfm]");
+  if(wf){ openWfm(wf.dataset.wfm.split(",")); return; }
+
+  const c=e.target.closest(".cell");
+  if(c){
+    if(!c.dataset.label) return; // label not in LABELS — nothing to match on
+    setLabel(c.dataset.label);
+    return;
+  }
+  // An instrument in the ranking that also has a pair block: same gesture as
+  // the Pair dropdown, so pressing it again puts everything back.
+  const r=e.target.closest(".rank-inst[data-pair]");
+  if(r){
+    const name=r.dataset.pair;
+    state.pair = (state.pair===name) ? "" : name;
+    document.getElementById("pairsel").value = state.pair;
+    render();
+  }
 });
 document.getElementById("filterbar").addEventListener("click",e=>{
   if(e.target.closest("#clearFilter")) clearLabel();
@@ -977,6 +1536,8 @@ document.addEventListener("keydown",e=>{
   // Checked before class mode returns: the class uses the plain link, and Esc
   // has to close an enlarged chart for them too.
   if(document.body.classList.contains("lightboxing")){ if(e.key==="Escape"){ e.preventDefault(); closeLightbox(); } return; }
+  // Also ahead of the class-mode return: the models page is mostly for them.
+  if(document.body.classList.contains("wfmmode")){ if(e.key==="Escape"){ e.preventDefault(); leaveWfm(); } return; }
   if(document.body.classList.contains("labelling")){ if(e.key==="Escape") closeLabels(); return; }
   if(document.body.classList.contains("building")){ if(e.key==="Escape") closeBuilder(); return; }
   if(document.body.classList.contains("classmode")) return;
@@ -1148,9 +1709,17 @@ function weekFromHash(){
   return t ? WEEKS.findIndex(w=>w.id.toLowerCase()===t.toLowerCase()) : -1;
 }
 function applyMode(){
-  const editing = hashTokens().some(t=>t.toLowerCase()==="edit");
+  const tokens = hashTokens().map(t=>t.toLowerCase());
+  const editing = tokens.indexOf("edit") >= 0;
   document.body.classList.toggle("classmode", !editing);
   if(!editing){ closePresent(); closeBuilder(); closeLabels(); }
+
+  // The models page. A route rather than a panel, so it has its own address,
+  // the Back button works, and #wfm can be handed to students on its own.
+  const wasOn = state.wfm;
+  state.wfm = tokens.indexOf("wfm") >= 0;
+  document.body.classList.toggle("wfmmode", state.wfm);
+  if(state.wfm && !wasOn) markWfm();
 }
 /* replaceState, not location.hash: writing the hash directly would stack a
    history entry on every Prev/Next and fire hashchange straight back at us.
@@ -1161,7 +1730,10 @@ function syncHash(){
   if(!w) return;
   const parts = [];
   if(!document.body.classList.contains("classmode")) parts.push("edit");
-  if(state.scope!=="all") parts.push(w.id);
+  // On the models page the hash names the page, not the week underneath it —
+  // otherwise the first render after landing on #wfm would overwrite it.
+  if(state.wfm) parts.push("wfm");
+  else if(state.scope!=="all") parts.push(w.id);
   const h = parts.length ? "#"+parts.join("/") : "";
   if(location.hash === h) return;
   try{ history.replaceState(null,"",location.pathname+location.search+h); }
