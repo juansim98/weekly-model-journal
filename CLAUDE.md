@@ -15,7 +15,7 @@ There is no build step. Editing `index.html` and pushing is the whole deploy.
 
 Everything I add lives in two blocks near the top of `index.html`:
 
-- `const LABELS = { ... }` — the day-label vocabulary and its colours
+- `const LABELS = { ... }` — every day wording and its colour
 - `const WEEKS = [ ... ]` — the record, newest week first
 
 New weeks go directly beneath the line `/* ===== NEWEST WEEK GOES HERE ===== */`.
@@ -35,11 +35,11 @@ The rendering code, CSS, and the base64 logo at the bottom of the file are settl
     {
       pair: "USDJPY", bias: "Bearish", range: "163.85 / 163.35",
       days: [
-        ["Mon","Range Formation","..."],
-        ["Tue","Buy-side Liquidity Raid","..."],
-        ["Wed","Top Formation","..."],
-        ["Thu","MSS + Displacement","..."],
-        ["Fri","Expansion / Delivery","..."]
+        ["Mon","Accumulation","..."],
+        ["Tue","Early-week breakout","..."],
+        ["Wed","Continuation","..."],
+        ["Thu","Repricing","..."],
+        ["Fri","Macro-assisted liquidity expansion","..."]
       ]
     }
   ]
@@ -48,6 +48,10 @@ The rendering code, CSS, and the base64 logo at the bottom of the file are settl
 
 Rules:
 - All five days present, always, in Mon–Fri order.
+- The middle element is the wording as I gave it — see **Day labels** below. Each
+  new one needs a `LABELS` entry with a colour.
+- Leave the third element `""` unless I actually wrote a description. Don't
+  invent prose to fill it.
 - `bias` is exactly `Bullish`, `Bearish`, or `Neutral`.
 - `range` is Monday's high / low as I state it.
 
@@ -67,37 +71,80 @@ custom combobox rather than a `<select>` because a plain dropdown stops being
 usable once the record runs to dozens of weeks. Arrow keys move the highlight,
 Enter picks, Escape restores the current week.
 
-Above the label chips is a scope switch, **Filters apply to: This week | All weeks**:
+**Filtering is by pressing a day.** Each square in a Mon–Fri strip is a button.
+Pressing one opens the record out to every week holding a day worded exactly the
+same, newest-first, and the pager hides. Pressing it again clears it.
 
-- **This week** — the pager stays; search, pair, bias and label chips narrow the
-  week you are on. If a filter matches nothing here but does match elsewhere, the
-  page says so and offers a button through to the all-weeks view.
-- **All weeks** — the pager hides and every week containing a match is listed
-  newest-first under its own heading. This is how the whole page behaved before.
+This replaced a standing legend of chips plus a **This week | All weeks** switch.
+Both had to go for the same reason: the vocabulary grows every week, so a list of
+every label was a wall that could only get worse, and a scope switch was a second
+control for something a single press already says.
 
-Both scopes run the same predicate (`pairMatches`); only the set of weeks handed
-to it changes. The week heading is drawn only in all-weeks view — on a single
-week the pager already names it.
+Because labels are never grouped, a press finds other weeks only where the same
+phrase recurs. That is the accepted trade for keeping every wording intact.
+
+## The address bar
+
+The hash is a set of `/`-separated tokens, in any order:
+
+    (nothing)         class view, newest week
+    #edit             my tools: Present, Add a week, Labels
+    #2026-W32         class view, opening on that week
+    #edit/2026-W32    both
+
+The week is written back on every change (`syncHash`, via `replaceState` so it
+doesn't stack a history entry per Prev/Next), so the address bar always names
+what is on screen and copying it shares exactly that.
+
+A link naming a week stays on that week for good — that is the point for "here
+is this week's review", and it means the **plain** address is the one to give the
+class as their standing bookmark, because it always opens on the newest week.
+An unknown week id is ignored rather than shown as an error.
+
+Filters are deliberately *not* in the URL. Pressing a day drops the week token,
+since an all-weeks view is not a week. Encoding an arbitrary label would make the
+link unreadable, which defeats the point of a link you paste to a class.
+
+Search matches only what is on the card — week id, dates, theme, note, pair,
+bias, range, and each day's label and description. Keep it that way. Putting
+anything hidden into that haystack makes the box look broken, because a common
+word comes back matching every card.
+
+There are still two scopes internally (`state.scope`), and both run the same
+predicate (`pairMatches`) — only the set of weeks handed to it changes. What
+changed is how you get between them. Because the pager hides in all-weeks view,
+`#filterbar` has to be the way back, so it shows whenever the scope is open —
+naming the family when there is one, otherwise just offering **Back to one week**.
+Search, pair and bias narrow whatever is on screen, as before, and the "nothing
+here, N matches elsewhere" hand-off still works.
+
+The week heading is drawn only in all-weeks view — on a single week the pager
+already names it.
 
 ## Day labels — the important rule
 
-The second element of each day is a label, and it **must match a key in `LABELS` exactly**.
-The colour coding and the cross-week filter both depend on this. A label that doesn't match
-renders with a red NEW LABEL flag.
+The second element of each day is the label, and it is **my wording, or my
+teacher's, reproduced exactly**. Never reword, tidy, shorten, expand or
+"correct" it. Do not strip a day-name prefix — if it says
+`Monday Accumulation`, that is the label.
 
-Current vocabulary:
+**Every wording is its own label. Nothing is grouped or merged.**
+`Monday Accumulation`, `Accumulation` and `Range` are three separate labels with
+three separate colours, even though they describe similar days. Don't propose a
+grouping or a family layer — I have turned that down twice. A day filters on its
+own exact wording and nothing else.
 
-- Range Formation
-- Buy-side Liquidity Raid
-- Sell-side Liquidity Raid
-- Top Formation
-- MSS + Displacement
-- Expansion / Delivery
-- Completion / Profit-Taking
+Every label used by a day **must match a key in `LABELS` exactly**. The colour
+coding and the press-a-day filter both depend on it. A label that doesn't match
+renders with a red NEW LABEL flag and `publish.ps1` refuses to publish.
 
-If my description doesn't fit any of these, **ask me** rather than inventing a label or
-forcing a bad fit. If I confirm a new one, add it to `LABELS` with a colour distinct from
-the existing set, and tell me which colour you chose.
+So adding a week is two edits: the week block, and a `LABELS` entry with a colour
+for every wording that is new. Tell me which colours you chose.
+
+Colours run in related shades by kind of move — Monday openers slate, shifts
+teal, deliveries blue, raids orange, pullbacks maroon — so a strip still reads as
+a shape from the back of the room. Each label owns its own hex regardless; the
+shared family of hue is a visual courtesy, not a grouping.
 
 Never silently rename or delete a label that existing weeks still use.
 
@@ -152,6 +199,16 @@ changed: `Add label: Midweek Reversal`, `Fix chart path casing`.
   Windows and breaks on GitHub Pages
 
 It warns, without blocking, about a missing chart, an empty Monday `range`, a
-lowercase pair name, and weeks that are out of newest-first order.
+lowercase pair name, weeks that are out of newest-first order, **two labels that
+differ only by case or punctuation**, and a label with a stray leading or
+trailing space.
+
+That last pair matters more than it looks. Every wording is its own label, so
+`Expansion` and `EXPANSION` are two entries with two colours and two filters —
+the record splits in half and nothing else would say so. The label check is
+deliberately **case-sensitive** (an ordinal dictionary, not a plain `@{}`,
+which in PowerShell is case-insensitive) so that it matches the browser: the
+JavaScript doing the lookup is case-sensitive, so a case-only mismatch renders a
+red NEW LABEL flag. Don't "simplify" that back to `@{}`.
 
 If I ask for a UI change, describe what will visibly differ before you make it.

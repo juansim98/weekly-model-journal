@@ -283,7 +283,11 @@ function Test-Journal {
     # --- the label vocabulary -----------------------------------------------
     $labelsEnd  = Find-Closing -Mask $mask -Start $mask.IndexOf('{', $mask.IndexOf('LABELS')) -Open '{' -Close '}'
     $labelsText = $data.Substring(0, $labelsEnd)
-    $knownLabels = @{}
+    # Ordinal, not a plain @{} - PowerShell hashtables are case-insensitive, so
+    # 'Expansion' and 'EXPANSION' would collapse into one entry here and the
+    # check below would pass a page that renders a red NEW LABEL flag, because
+    # the JavaScript doing the lookup is case-sensitive. Match the browser.
+    $knownLabels = New-Object 'System.Collections.Generic.Dictionary[string,string]' ([StringComparer]::Ordinal)
     foreach ($m in [regex]::Matches($labelsText, '"((?:[^"\\]|\\.)*)"\s*:\s*"(#[0-9A-Fa-f]{3,8})"')) {
         $knownLabels[$m.Groups[1].Value] = $m.Groups[2].Value
     }
@@ -293,6 +297,33 @@ function Test-Journal {
         return
     }
     SayOk "$($knownLabels.Count) labels in the vocabulary."
+
+    # --- labels that differ only by case, spacing or punctuation -------------
+    # Every wording is its own label, so 'EXPANSION' and 'Expansion' are two
+    # entries: two colours, two filters, and a record quietly splitting in half
+    # with nothing to say so. Warn, never block - sometimes both are wanted.
+    $byShape = @{}
+    foreach ($name in $knownLabels.Keys) {
+        $shape = ($name.ToLowerInvariant() -replace '[^a-z0-9]', '')
+        if ($shape -eq '') { continue }
+        if ($byShape.ContainsKey($shape)) { $byShape[$shape] += $name }
+        else                              { $byShape[$shape] = @($name) }
+    }
+    $nearDupes = 0
+    foreach ($shape in $byShape.Keys) {
+        if ($byShape[$shape].Count -gt 1) {
+            $nearDupes++
+            $names = (($byShape[$shape] | Sort-Object) | ForEach-Object { "'$_'" }) -join ' and '
+            SayWarn "$names differ only by case or punctuation - that is two labels, two colours, two filters."
+        }
+    }
+    foreach ($name in $knownLabels.Keys) {
+        if ($name -ne $name.Trim()) {
+            $nearDupes++
+            SayWarn "'$name' has a space at the start or end - it will never match the same wording typed without one."
+        }
+    }
+    if ($nearDupes -eq 0) { SayOk 'No two labels differ only by case or punctuation.' }
 
     # --- weeks and pairs ----------------------------------------------------
     $weekMatches = @([regex]::Matches($data, 'id:\s*"((?:[^"\\]|\\.)*)"'))
@@ -396,7 +427,7 @@ function Test-Journal {
                     }
                     if (-not $knownLabels.ContainsKey($label)) {
                         $script:problems += "Line ${dln}: $where $dayName - '$label' is not in LABELS."
-                        SayBad "Line ${dln}: $where $dayName - '$label' is not in LABELS (renders as a red NEW LABEL flag)."
+                        SayBad "Line ${dln}: $where $dayName - '$label' is not in LABELS (renders as a red NEW LABEL flag). Add it there with a colour."
                     }
                 }
             }

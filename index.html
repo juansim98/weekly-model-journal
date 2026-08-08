@@ -21,17 +21,49 @@
    ============================================================ */
 
 /* ---- DAY LABEL VOCABULARY ----------------------------------
-   The colour is the pattern. Keep this list short — only add a
-   label here when it genuinely keeps recurring.
+   Every wording that appears on the page, with its colour. Each
+   entry stands on its own — nothing is grouped or merged, and a
+   day filters on its own exact wording.
+
+   A label used by any day must exist here or it renders with a
+   red NEW LABEL flag and publish.ps1 refuses to publish. So a new
+   week means adding its new wordings here, each with a colour.
+
+   Colours run in related shades by kind of move — the Monday
+   openers slate, the shifts teal, deliveries blue, raids orange,
+   pullbacks maroon — so a strip still reads as a shape from the
+   back of the room. Every label owns its own hex all the same.
    ------------------------------------------------------------ */
 const LABELS = {
-  "Range Formation":            "#5B6B80",
-  "Buy-side Liquidity Raid":    "#B4470E",
-  "Sell-side Liquidity Raid":   "#8A5A0B",
-  "Top Formation":              "#6D3A8E",
-  "MSS + Displacement":         "#0D6B62",
-  "Expansion / Delivery":       "#17408B",
-  "Completion / Profit-Taking": "#97A1AE"
+  /* used by 2026-W31 */
+  "Range Formation":                     "#5B6B80",
+  "Buy-side Liquidity Raid":             "#B4470E",
+  "Sell-side Liquidity Raid":            "#8A5A0B",
+  "Top Formation":                       "#6D3A8E",
+  "MSS + Displacement":                  "#0D6B62",
+  "Expansion / Delivery":                "#17408B",
+  "Completion / Profit-Taking":          "#97A1AE",
+
+  /* 2026-W32 — GOLD */
+  "Monday Accumulation":                 "#4A5A6E",
+  "Tuesday/early-week breakout":         "#0E7A6B",
+  "Wednesday continuation":              "#1E5AA8",
+  "Thursday repricing":                  "#9B4A5A",
+  "Friday macro-assisted liquidity expansion": "#123A6B",
+
+  /* 2026-W32 — EURUSD */
+  "Range":                               "#6B7A8C",
+  "Bullish pressure develops":           "#2E7D5B",
+  "Monday High breaks":                  "#0B5F57",
+  "Discount retracement":                "#A65A68",
+  "Continuation / external liquidity":   "#1A4E96",
+
+  /* 2026-W32 — NASDAQ */
+  "Accumulation":                        "#55657A",
+  "Expansion":                           "#0F3D7A",
+  "Liquidity objective":                 "#C25510",
+  "Rebalance":                           "#8C4250",
+  "Continuation / recovery":             "#2166B5"
 };
 
 
@@ -40,28 +72,38 @@ const WEEKS = [
 /* ===== NEWEST WEEK GOES HERE ===== */
 {
   id: "2026-W32",
-  dates: "3-7 August 2026",
+  dates: "3–7 August 2026",
   theme: "",
   note: "",
   pairs: [
     {
-      pair: "USDJPY", bias: "Bearish", range: "",
+      pair: "GOLD", bias: "Bullish", range: "",
       days: [
-        ["Mon","Sell-side Liquidity Raid",""],
-        ["Tue","Top Formation",""],
-        ["Wed","Buy-side Liquidity Raid",""],
-        ["Thu","Top Formation",""],
-        ["Fri","Expansion / Delivery",""]
+        ["Mon","Monday Accumulation",""],
+        ["Tue","Tuesday/early-week breakout",""],
+        ["Wed","Wednesday continuation",""],
+        ["Thu","Thursday repricing",""],
+        ["Fri","Friday macro-assisted liquidity expansion",""]
       ]
     },
     {
-      pair: "GBPJPY", bias: "Bullish", range: "",
+      pair: "EURUSD", bias: "Bullish", range: "",
       days: [
-        ["Mon","Sell-side Liquidity Raid",""],
-        ["Tue","Buy-side Liquidity Raid",""],
-        ["Wed","Sell-side Liquidity Raid",""],
-        ["Thu","Sell-side Liquidity Raid",""],
-        ["Fri","Top Formation",""]
+        ["Mon","Range",""],
+        ["Tue","Bullish pressure develops",""],
+        ["Wed","Monday High breaks",""],
+        ["Thu","Discount retracement",""],
+        ["Fri","Continuation / external liquidity",""]
+      ]
+    },
+    {
+      pair: "NASDAQ", bias: "Bullish", range: "",
+      days: [
+        ["Mon","Accumulation",""],
+        ["Tue","Expansion",""],
+        ["Wed","Liquidity objective",""],
+        ["Thu","Rebalance",""],
+        ["Fri","Continuation / recovery",""]
       ]
     }
   ]
@@ -181,23 +223,16 @@ const WEEKS = [
   .weekpick-list li.hi{background:var(--ink);color:var(--paper)}
   .weekpick-list li.none{cursor:default;color:var(--faint)}
 
-  /* ---- filter scope switch ---- */
-  .scopebar{max-width:1120px;margin:0 auto;padding:18px 24px 0;
+  /* ---- active day filter ----
+     There is no standing list of labels any more — it grew unusable once the
+     wording stopped repeating exactly. You filter by pressing a day in a
+     strip instead, so this bar appears only once one is pressed. */
+  .filterbar{max-width:1120px;margin:0 auto;padding:18px 24px 0;
     display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .scope-label{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;
-    letter-spacing:.09em;color:var(--faint)}
-  .scope-switch{display:inline-flex;border:1px solid var(--rule);border-radius:3px;overflow:hidden}
-  .scopebtn{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;
-    background:var(--card);border:0;padding:7px 13px;cursor:pointer;color:var(--muted)}
-  .scopebtn + .scopebtn{border-left:1px solid var(--rule)}
-  .scopebtn[aria-pressed=true]{background:var(--ink);color:var(--paper)}
-
-  .legend{max-width:1120px;margin:0 auto;padding:16px 24px 0;display:flex;flex-wrap:wrap;gap:6px}
-  .chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;border:1px solid var(--rule);
-    background:var(--card);border-radius:2px;padding:4px 8px 4px 6px;cursor:pointer;color:var(--muted);
-    display:inline-flex;align-items:center;gap:6px}
-  .chip .swatch{width:8px;height:12px;border-radius:1px;flex:none}
-  .chip[aria-pressed=true]{border-color:var(--ink);color:var(--ink);font-weight:500}
+  .filterbar[hidden]{display:none}
+  .fb-swatch{width:10px;height:16px;border-radius:1px;flex:none}
+  .fb-text{font-family:var(--mono);font-size:11.5px;letter-spacing:.03em;color:var(--muted)}
+  .fb-text b{color:var(--ink);font-weight:600}
 
   main{max-width:1120px;margin:0 auto;padding:26px 24px 80px}
   .week{margin-bottom:44px}
@@ -218,8 +253,15 @@ const WEEKS = [
   .pair-range{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-left:auto}
 
   .strip{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:14px 18px 0}
+  /* Each cell is a button: pressing it gathers every week with a day of the
+     same family. Kept looking like a cell rather than a control, because the
+     strip has to stay readable as a shape first. */
   .cell{border-radius:2px;padding:7px 8px;min-height:46px;color:#fff;
-    display:flex;flex-direction:column;justify-content:space-between}
+    display:flex;flex-direction:column;justify-content:space-between;
+    border:0;font:inherit;text-align:left;width:100%;cursor:pointer;
+    transition:transform .08s ease, box-shadow .08s ease}
+  .cell:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(24,36,72,.22)}
+  .cell:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
   .cell .d{font-family:var(--mono);font-size:10px;letter-spacing:.12em;opacity:.75}
   .cell .l{font-size:10.5px;font-weight:500;line-height:1.25}
   .cell.unknown{outline:2px dashed var(--warn);outline-offset:-2px}
@@ -388,14 +430,10 @@ const WEEKS = [
     .controls-inner > .field:nth-of-type(1){flex:1 1 100%}
     .field select{width:100%}
     .dayrow{grid-template-columns:1fr}
-    /* Eleven labels stack into six rows on a phone and push the record off
-       screen. One swipeable row instead. */
-    .legend{flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px;
-      scrollbar-width:none;-webkit-overflow-scrolling:touch}
-    .legend::-webkit-scrollbar{display:none}
-    .chip{flex:none}
+    /* No hover on touch, and the lift only fights the tap highlight. */
+    .cell:hover{transform:none;box-shadow:none}
   }
-  @media print{ .controls,.legend,.scopebar,.howto,#present,#builder{display:none !important}
+  @media print{ .controls,.filterbar,.howto,#present,#builder{display:none !important}
     .pager .pgbtn,.pager .weekpick{display:none !important}
     body{background:#fff} .pair{break-inside:avoid} }
 </style>
@@ -414,7 +452,7 @@ const WEEKS = [
 <div class="controls">
   <div class="controls-inner">
     <div class="field"><label for="q">Search</label>
-      <input type="search" id="q" placeholder="e.g. buy-side raid"></div>
+      <input type="search" id="q" placeholder="e.g. retracement, NASDAQ, august"></div>
     <div class="field"><label for="pairsel">Pair</label>
       <select id="pairsel"><option value="">All</option></select></div>
     <div class="field"><label for="biassel">Bias</label>
@@ -446,15 +484,10 @@ const WEEKS = [
   </div>
 </div>
 
-<div class="scopebar">
-  <span class="scope-label">Filters apply to</span>
-  <span class="scope-switch">
-    <button class="scopebtn" id="scopeWeek" aria-pressed="true">This week</button>
-    <button class="scopebtn" id="scopeAll" aria-pressed="false">All weeks</button>
-  </span>
-</div>
+<!-- Appears only once the record is opened out across all weeks — which
+     pressing a day in any Mon–Fri strip does. This bar is the way back. -->
+<div class="filterbar" id="filterbar" hidden></div>
 
-<div class="legend" id="legend"></div>
 <main id="out"></main>
 
 <section class="howto">
@@ -465,9 +498,10 @@ const WEEKS = [
     <li>Open this file in Notepad. Near the top you will see <code>===== NEWEST WEEK GOES HERE =====</code>. Paste directly under that line and save.</li>
     <li>Double-click <b>publish.bat</b>, then refresh. Same page, same links, one more week.</li>
     <li><b>One week on screen.</b> <b>&#9664; Prev</b> goes back in time, <b>Next &#9654;</b> forward. New weeks always open first. To jump straight to a week, click the box on the right and start typing — <code>W31</code>, <code>july</code> and <code>2026</code> all narrow the list.</li>
-    <li><b>Two ways to filter.</b> <b>This week</b> narrows the week you are on. <b>All weeks</b> hides the pager and gathers every week that matches — use it to show the class the same setup repeating across months.</li>
+    <li><b>Press a day to compare it.</b> Click any square in a Mon–Fri strip and the page gathers every week holding a day worded exactly the same, newest-first — that is how you show the class the same setup repeating across months. <b>Clear</b> returns you to one week. Search, Pair and Bias narrow whatever is on screen.</li>
     <li><b>Charts open full screen.</b> Click or tap any chart to enlarge it, tap again to zoom to full size and drag around. Esc or Close returns. This is the only way the charts are readable on a phone.</li>
-    <li><b>Two links, one file.</b> Give the class the plain address. Keep the same address with <code>#edit</code> on the end for yourself — that is the only place Present, Add a week and Labels appear. Bookmark both.</li>
+    <li><b>Two links, one file.</b> Give the class the plain address — it always opens on the newest week. Keep the same address with <code>#edit</code> on the end for yourself; that is the only place Present, Add a week and Labels appear. Bookmark both.</li>
+    <li><b>Linking to one week.</b> The address bar follows the week you are on, so to send the class a particular week — <em>"this is the one to study"</em> — just copy it while that week is on screen. It ends in <code>#2026-W32</code> and will still open that same week months later, after newer ones have gone in.</li>
     <li><b>For class:</b> open your <code>#edit</code> link, filter to one pair, then press <b>Present</b>. Arrow keys move, Esc leaves. The class sees a clean page with search and filters and nothing to break.</li>
   </ol>
 </section>
@@ -508,7 +542,7 @@ const WEEKS = [
 <div id="labelpanel" role="dialog" aria-modal="true" aria-label="Manage labels">
   <div class="lp">
     <h2>Labels</h2>
-    <p class="lead">Your vocabulary, not a fixed list. Rename, recolour, delete, or add your own. <b>Used</b> counts how many recorded days already carry that label — a label in use cannot be deleted until you change those days first.</p>
+    <p class="lead">Your vocabulary, not a fixed list — every wording that appears on the page, with its colour. Nothing is grouped: each entry stands on its own, and pressing a day in a strip finds days with that exact wording. Rename, recolour, delete, or add your own. <b>Used</b> counts how many recorded days carry that label — a label in use cannot be deleted until you change those days first.</p>
     <div class="lp-head"><span>Colour</span><span>Label</span><span>Used</span><span></span></div>
     <div id="lrows"></div>
     <div class="b-actions">
@@ -538,6 +572,7 @@ const WEEKS = [
       <div class="grow"><label for="bNote">Week note</label><input type="text" id="bNote" placeholder="One line on what tied the week together"></div>
     </div>
 
+    <datalist id="labelsuggest"></datalist>
     <div id="pairforms"></div>
 
     <div class="b-actions">
@@ -547,7 +582,7 @@ const WEEKS = [
       <button class="btn" id="closeBuilder">Close</button>
     </div>
     <textarea id="out-code" spellcheck="false" readonly></textarea>
-    <p class="note">Paste it near the top of this file, directly beneath <code>/* ===== NEWEST WEEK GOES HERE ===== */</code>, save, refresh.</p>
+    <p class="note">Paste it near the top of this file, directly beneath <code>/* ===== NEWEST WEEK GOES HERE ===== */</code>, save, refresh. Word each day however you like — but any wording that is new needs adding to <code>const LABELS</code> with a colour, or the day shows a red NEW LABEL flag and will not publish.</p>
   </div>
 </div>
 
@@ -574,6 +609,9 @@ function pairMatches(w,p){
   if(state.bias && p.bias!==state.bias) return false;
   if(state.label && !p.days.some(d=>d[1]===state.label)) return false;
   if(q){
+    // Only what is actually on the card. Nothing hidden goes in here — a
+    // haystack wider than the page makes the box look broken, because a
+    // common word comes back matching everything.
     const hay=(w.id+" "+w.dates+" "+w.theme+" "+(w.note||"")+" "+p.pair+" "+p.bias+" "+p.range+" "+
                p.days.map(d=>d[1]+" "+d[2]).join(" ")).toLowerCase();
     if(!hay.includes(q)) return false;
@@ -648,6 +686,8 @@ function render(){
   });
 
   drawPager();
+  drawFilterBar();
+  syncHash();
 }
 
 /* ---------------- week pager ----------------
@@ -674,14 +714,10 @@ function goWeek(i){
 function setScope(s){
   state.scope = s;
   document.body.classList.toggle("allweeks", s==="all");
-  document.getElementById("scopeWeek").setAttribute("aria-pressed", s==="week"?"true":"false");
-  document.getElementById("scopeAll").setAttribute("aria-pressed",  s==="all" ?"true":"false");
   render();
 }
 document.getElementById("olderWeek").addEventListener("click",()=>goWeek(state.week+1));
 document.getElementById("newerWeek").addEventListener("click",()=>goWeek(state.week-1));
-document.getElementById("scopeWeek").addEventListener("click",()=>setScope("week"));
-document.getElementById("scopeAll").addEventListener("click",()=>setScope("all"));
 
 /* ---------------- jump-to-week ----------------
    A plain <select> is fine for a handful of weeks and unusable at a hundred,
@@ -772,8 +808,11 @@ function pairCard(w,p){
   const strip = p.days.map(([d,label])=>{
     const k=known(label);
     const hl = state.label ? (label===state.label ? " match" : " dim") : "";
-    return `<div class="cell${k?"":" unknown"}${hl}" style="background:${k?labels[label]:"#FFF"};color:${k?"#fff":"var(--warn)"}">
-      <span class="d">${esc(d).toUpperCase()}</span><span class="l">${esc(label)}</span></div>`;
+    const tip = k ? `Show every week with a day worded "${label}"`
+                  : "This label is not in LABELS yet, so there is nothing to match on";
+    return `<button type="button" class="cell${k?"":" unknown"}${hl}" data-label="${esc(k?label:"")}"
+      title="${esc(tip)}" style="background:${k?labels[label]:"#FFF"};color:${k?"#fff":"var(--warn)"}">
+      <span class="d">${esc(d).toUpperCase()}</span><span class="l">${esc(label)}</span></button>`;
   }).join("");
   const days = p.days.map(([d,label,note])=>
     `<div class="day${state.label&&label===state.label?" match":""}"><div class="day-key">${esc(d)}</div>
@@ -793,19 +832,46 @@ function pairCard(w,p){
   </article>`;
 }
 
-/* ---------------- legend ---------------- */
-function buildLegend(){
-  const el=document.getElementById("legend");
-  el.innerHTML=Object.entries(labels).map(([n,c])=>
-    `<button class="chip" data-label="${esc(n)}" aria-pressed="${state.label===n?"true":"false"}">
-      <span class="swatch" style="background:${c}"></span>${esc(n)}</button>`).join("");
+/* ---------------- day filter ----------------
+   Pressing a day in any Mon–Fri strip opens the record out to every week
+   holding a day with that exact label, newest-first. This replaced a
+   standing legend of every label: the vocabulary grows every week, so a
+   list of all of it was a wall rather than a control, and it could only
+   ever get worse. Pressing the same day again clears it.
+
+   Because the pager hides in all-weeks view, the filter bar has to be the
+   way back — it therefore shows whenever the scope is open, filter or not.
+   ------------------------------------------------------------------- */
+function setLabel(f){
+  if(state.label===f){ clearLabel(); return; }
+  state.label = f;
+  setScope("all");
+  window.scrollTo({top:0,behavior:"smooth"});
 }
-document.getElementById("legend").addEventListener("click",e=>{
-  const b=e.target.closest(".chip"); if(!b) return;
-  const on=b.getAttribute("aria-pressed")==="true";
-  state.label=on?"":b.dataset.label; buildLegend(); render();
+function clearLabel(){
+  state.label = "";
+  setScope("week");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function drawFilterBar(){
+  const bar=document.getElementById("filterbar");
+  if(state.scope!=="all"){ bar.hidden=true; bar.innerHTML=""; return; }
+  bar.hidden=false;
+  bar.innerHTML = state.label
+    ? `<span class="fb-swatch" style="background:${esc(labels[state.label]||"#97A1AE")}"></span>
+       <span class="fb-text">Every week with a day worded <b>${esc(state.label)}</b></span>
+       <button class="btn" id="clearFilter">Clear &#10005;</button>`
+    : `<span class="fb-text">Showing all weeks</span>
+       <button class="btn" id="clearFilter">Back to one week &#10005;</button>`;
+}
+document.getElementById("out").addEventListener("click",e=>{
+  const c=e.target.closest(".cell"); if(!c) return;
+  if(!c.dataset.label) return;   // wording has no family yet — nothing to match
+  setLabel(c.dataset.label);
 });
-buildLegend();
+document.getElementById("filterbar").addEventListener("click",e=>{
+  if(e.target.closest("#clearFilter")) clearLabel();
+});
 
 (function(){
   const names=[...new Set(WEEKS.flatMap(w=>w.pairs.map(p=>p.pair)))].sort();
@@ -921,7 +987,16 @@ document.addEventListener("keydown",e=>{
 });
 
 /* ---------------- builder ---------------- */
-function labelOptions(){ return Object.keys(labels).map(l=>`<option>${esc(l)}</option>`).join(""); }
+/* Free text, not a dropdown: a new week routinely brings a phrase that has
+   never been used before. The labels already on record are offered as
+   suggestions, nothing more. */
+function labelOptions(){
+  return Object.keys(labels).sort().map(l=>`<option>${esc(l)}</option>`).join("");
+}
+function syncLabelSuggest(){
+  const dl=document.getElementById("labelsuggest");
+  if(dl) dl.innerHTML=labelOptions();
+}
 function pairForm(i){
   return `<div class="pairform" data-i="${i}">
     <h3>Pair ${i+1}</h3>
@@ -932,7 +1007,7 @@ function pairForm(i){
     </div>
     ${DAYS.map(d=>`<div class="dayrow">
       <span class="dk">${d}</span>
-      <select class="f-label">${labelOptions()}</select>
+      <input type="text" class="f-label" list="labelsuggest" placeholder="The wording for this day">
       <input type="text" class="f-note" placeholder="What happened, in your own words">
     </div>`).join("")}
   </div>`;
@@ -944,6 +1019,7 @@ function addPairForm(){
 function openBuilder(){
   const box=document.getElementById("pairforms");
   if(!box.children.length) addPairForm();
+  syncLabelSuggest();
   document.body.classList.add("building");
 }
 function closeBuilder(){ document.body.classList.remove("building"); }
@@ -1027,11 +1103,7 @@ document.getElementById("lrows").addEventListener("click",e=>{
 });
 document.getElementById("applyLabels").addEventListener("click",()=>{
   labels=readLabelRows();
-  buildLegend(); render(); buildLabelRows();
-  document.querySelectorAll(".f-label").forEach(sel=>{
-    const keep=sel.value; sel.innerHTML=labelOptions();
-    if(Object.prototype.hasOwnProperty.call(labels,keep)) sel.value=keep;
-  });
+  render(); buildLabelRows(); syncLabelSuggest();
 });
 document.getElementById("genLabels").addEventListener("click",()=>{
   const next=readLabelRows();
@@ -1051,19 +1123,60 @@ document.getElementById("copyLabels").addEventListener("click",()=>{
   if(navigator.clipboard) navigator.clipboard.writeText(ta.value).catch(()=>{});
 });
 
-/* ---------------- class mode vs editing mode ----------------
-   Plain URL            -> class view: read, search, filter only.
-   Same URL plus #edit  -> your tools: Present, Add a week, Labels.
-   Give the class the plain link and keep the #edit one for yourself.
+/* ---------------- the address bar ----------------
+   The hash is a set of tokens separated by "/", in any order:
+
+     (nothing)            -> class view, newest week
+     #edit                -> your tools: Present, Add a week, Labels
+     #2026-W32            -> class view, opening on that week
+     #edit/2026-W32       -> both
+
+   The week is written back on every change, so the address bar always
+   names what is on screen and copying it shares exactly that. Note the
+   consequence: a link naming a week stays on that week for good, which
+   is the point for "here is this week's review", but means the plain
+   address - no week - is the one to give the class as their standing
+   bookmark, because it always opens on the newest.
+
+   An unknown or deleted week id is ignored rather than shown as an
+   error; the page just opens on the newest week.
    ------------------------------------------------------------- */
+const WEEK_ID = /^\d{4}-w\d{2}$/i;
+function hashTokens(){ return location.hash.replace(/^#/,"").split("/").filter(Boolean); }
+function weekFromHash(){
+  const t = hashTokens().find(x=>WEEK_ID.test(x));
+  return t ? WEEKS.findIndex(w=>w.id.toLowerCase()===t.toLowerCase()) : -1;
+}
 function applyMode(){
-  const editing = location.hash.toLowerCase() === "#edit";
+  const editing = hashTokens().some(t=>t.toLowerCase()==="edit");
   document.body.classList.toggle("classmode", !editing);
   if(!editing){ closePresent(); closeBuilder(); closeLabels(); }
 }
-window.addEventListener("hashchange",applyMode);
-applyMode();
+/* replaceState, not location.hash: writing the hash directly would stack a
+   history entry on every Prev/Next and fire hashchange straight back at us.
+   Wrapped because some browsers refuse history writes on a file:// page —
+   opening index.html by double-click still has to work. */
+function syncHash(){
+  const w = WEEKS[state.week];
+  if(!w) return;
+  const parts = [];
+  if(!document.body.classList.contains("classmode")) parts.push("edit");
+  if(state.scope!=="all") parts.push(w.id);
+  const h = parts.length ? "#"+parts.join("/") : "";
+  if(location.hash === h) return;
+  try{ history.replaceState(null,"",location.pathname+location.search+h); }
+  catch(e){ /* file:// — the page works, the address just will not follow */ }
+}
+window.addEventListener("hashchange",()=>{
+  applyMode();
+  const i = weekFromHash();
+  if(i>=0) state.week = i;
+  render();
+});
 
+const startWeek = weekFromHash();
+if(startWeek>=0) state.week = startWeek;
+applyMode();
 render();
 </script>
 <style>
