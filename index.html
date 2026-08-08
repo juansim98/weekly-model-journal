@@ -395,19 +395,56 @@ const WEEKS = [
   .wfm-lead{font-size:13.5px;color:var(--muted);margin:0 0 14px;max-width:88ch}
   .wfm-lead b{color:var(--ink)}
   .wfm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:12px}
-  .wfm-card{border:1px solid var(--rule);border-radius:3px;padding:12px 14px;
-    scroll-margin-top:14px;transition:box-shadow .15s ease}
+  .wfm-card{position:relative;border:1px solid var(--rule);border-radius:3px;
+    padding:12px 14px 26px;background:var(--card);cursor:pointer;
+    scroll-margin-top:14px;transition:box-shadow .15s ease, border-color .15s ease}
+  .wfm-card:hover{border-color:var(--faint);box-shadow:0 3px 14px rgba(24,36,72,.12)}
+  .wfm-card:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .wfm-card.hit{box-shadow:0 0 0 2px var(--gold)}
+  .wfm-more{position:absolute;right:12px;bottom:9px;font-family:var(--mono);
+    font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+  .wfm-card:hover .wfm-more{color:var(--ink)}
+
+  /* One model, enlarged. Above #wfmpage (70) and the label panel (75), below
+     the chart lightbox (100), which stays the topmost thing on the page. */
+  #wfmzoom{position:fixed;inset:0;z-index:85;background:rgba(14,21,38,.62);
+    display:none;padding:4vh 4vw;overflow:auto}
+  body.wfmzooming #wfmzoom{display:flex;align-items:flex-start;justify-content:center}
+  body.wfmzooming{overflow:hidden}
+  .wfmz-panel{background:var(--card);border-radius:5px;width:100%;max-width:740px;
+    padding:24px 28px 20px;box-shadow:0 24px 70px rgba(10,16,32,.45)}
+  .wfmz-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .wfmz-panel .wfm-id{font-size:12px;padding:3px 9px}
+  .wfmz-name{font-size:20px;font-weight:700;line-height:1.25}
+  .wfmz-panel .wfm-flow{margin-bottom:16px}
+  .wfmz-panel .wfm-step{font-size:14.5px;padding:5px 0 5px 22px;line-height:1.5}
+  .wfmz-panel .wfm-step::before{left:5px;top:13px;width:7px;height:7px}
+  .wfmz-panel .wfm-step:not(:last-child)::after{left:8px;top:21px;bottom:-3px}
+  .wfmz-panel .wfm-tell{font-size:16px;padding-top:12px;line-height:1.45}
+  .wfmz-panel .wfm-tell span{font-size:9.5px;margin-bottom:5px}
+  .wfmz-panel .wfm-note{font-size:14px;line-height:1.65;margin-top:12px}
+  .wfmz-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    margin-top:20px;padding-top:14px;border-top:1px solid var(--rule)}
+  .wfmz-pos{font-family:var(--mono);font-size:11px;color:var(--faint);margin-left:auto}
   .wfm-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px}
   .wfm-id{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.05em;
     color:#fff;padding:2px 7px;border-radius:2px;flex:none}
   .wfm-name{font-size:13px;font-weight:600;line-height:1.35}
   .wfm-flag{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;
     color:var(--gold);border:1px solid var(--gold);border-radius:2px;padding:1px 5px;flex:none}
-  .wfm-flow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:10px}
-  .wfm-step{font-size:11px;color:var(--muted);background:var(--paper);
-    border-radius:2px;padding:2px 7px;line-height:1.4}
-  .wfm-arrow{color:var(--faint);font-size:10px}
+  /* The flow was a wrapping row of chips with arrows between them as text.
+     At any width that has arrows falling at the end of a line pointing at
+     nothing, and the whole chain rewraps into a different shape on every
+     screen. One step per row instead, with the connector drawn as a rail
+     rather than typed as a character — the sequence then reads the same at
+     every width, and a long step simply wraps inside its own row. */
+  .wfm-flow{list-style:none;margin:0 0 10px;padding:0}
+  .wfm-step{position:relative;padding:3px 0 3px 17px;font-size:11.5px;
+    color:var(--muted);line-height:1.45}
+  .wfm-step::before{content:"";position:absolute;left:4px;top:9px;
+    width:5px;height:5px;border-radius:50%;background:var(--faint)}
+  .wfm-step:not(:last-child)::after{content:"";position:absolute;
+    left:6px;top:15px;bottom:-2px;width:1px;background:var(--rule)}
   .wfm-tell{border-top:1px dashed var(--rule);padding-top:8px;font-size:12.5px;color:var(--ink)}
   .wfm-tell span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.11em;
     text-transform:uppercase;color:var(--faint);margin-bottom:3px}
@@ -822,6 +859,20 @@ const WEEKS = [
   <div class="wfm-body" id="wfmBody"></div>
 </div>
 
+<!-- One model, enlarged. The cards are dense at grid size; this is for
+     reading one properly, and for putting a single model on a projector. -->
+<div id="wfmzoom" role="dialog" aria-modal="true" aria-label="Weekly flow model">
+  <div class="wfmz-panel" id="wfmzPanel">
+    <div id="wfmzBody"></div>
+    <div class="wfmz-nav">
+      <button class="btn" id="wfmzPrev">&#8592;&nbsp;Previous</button>
+      <button class="btn" id="wfmzNext">Next&nbsp;&#8594;</button>
+      <button class="btn solid" id="wfmzClose">Close &#10005;</button>
+      <span class="wfmz-pos" id="wfmzPos"></span>
+    </div>
+  </div>
+</div>
+
 <!-- ============ CHART LIGHTBOX ============ -->
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="Chart">
   <div class="lb-bar">
@@ -950,20 +1001,58 @@ function totalMatches(){
    enough — nothing re-renders underneath it, so its open state looks after
    itself and needs no entry in `state`.
    ------------------------------------------------------------------- */
-function wfmCard(m){
-  const flow = m.flow.map(s=>`<span class="wfm-step">${esc(s)}</span>`)
-                     .join(`<span class="wfm-arrow">&#8594;</span>`);
-  return `<article class="wfm-card" id="wfm-${esc(m.id.toLowerCase())}">
+/* An ordered list, because that is what a flow is — and it means the steps
+   keep their sequence for a screen reader as well as for the eye. */
+function wfmFlow(m){
+  return `<ol class="wfm-flow">${m.flow.map(s=>`<li class="wfm-step">${esc(s)}</li>`).join("")}</ol>`;
+}
+function wfmCard(m,i){
+  return `<article class="wfm-card" id="wfm-${esc(m.id.toLowerCase())}"
+      data-model="${i}" tabindex="0" role="button"
+      aria-label="Enlarge ${esc(m.id)}, ${esc(m.name)}">
     <div class="wfm-h">
       <span class="wfm-id" style="background:${esc(m.colour)}">${esc(m.id)}</span>
       <span class="wfm-name">${esc(m.name)}</span>
       ${m.primary?`<span class="wfm-flag">Primary</span>`:""}
     </div>
-    <div class="wfm-flow">${flow}</div>
+    ${wfmFlow(m)}
     <div class="wfm-tell"><span>Key recognition</span>${esc(m.tell)}</div>
     ${m.note?`<p class="wfm-note">${esc(m.note)}</p>`:""}
+    <span class="wfm-more">Enlarge &#8599;</span>
   </article>`;
 }
+/* ---- one model, enlarged ----
+   The grid is dense on purpose, so any card can be opened on its own. Prev and
+   Next step through all six without going back to the grid, which is how you
+   walk a class through them. */
+let zoomAt = -1;
+function openZoom(i){
+  if(!WFM_MODELS.length) return;
+  zoomAt = (i + WFM_MODELS.length) % WFM_MODELS.length;
+  const m = WFM_MODELS[zoomAt];
+  document.getElementById("wfmzBody").innerHTML =
+    `<div class="wfmz-bar">
+       <span class="wfm-id" style="background:${esc(m.colour)}">${esc(m.id)}</span>
+       <span class="wfmz-name">${esc(m.name)}</span>
+       ${m.primary?`<span class="wfm-flag">Primary</span>`:""}
+     </div>
+     ${wfmFlow(m)}
+     <div class="wfm-tell"><span>Key recognition</span>${esc(m.tell)}</div>
+     ${m.note?`<p class="wfm-note">${esc(m.note)}</p>`:""}`;
+  document.getElementById("wfmzPos").textContent = (zoomAt+1)+" / "+WFM_MODELS.length;
+  document.body.classList.add("wfmzooming");
+  document.getElementById("wfmzPanel").scrollTop = 0;
+}
+function closeZoom(){ document.body.classList.remove("wfmzooming"); zoomAt = -1; }
+function zoomStep(n){ if(zoomAt>=0) openZoom(zoomAt+n); }
+document.getElementById("wfmzPrev").addEventListener("click",()=>zoomStep(-1));
+document.getElementById("wfmzNext").addEventListener("click",()=>zoomStep(1));
+document.getElementById("wfmzClose").addEventListener("click",closeZoom);
+// Clicking the surround closes; clicking the panel must not.
+document.getElementById("wfmzoom").addEventListener("click",e=>{
+  if(!e.target.closest(".wfmz-panel")) closeZoom();
+});
+
 function buildWfm(){
   const body=document.getElementById("wfmBody");
   if(!body || !Array.isArray(WFM_MODELS) || !WFM_MODELS.length) return;
@@ -1011,6 +1100,19 @@ function leaveWfm(){
 }
 document.getElementById("wfmBack").addEventListener("click",leaveWfm);
 buildWfm();
+
+/* Cards are role=button, so they answer to Enter and Space as well as a click. */
+document.getElementById("wfmBody").addEventListener("click",e=>{
+  const c=e.target.closest(".wfm-card[data-model]");
+  if(c) openZoom(parseInt(c.dataset.model,10));
+});
+document.getElementById("wfmBody").addEventListener("keydown",e=>{
+  if(e.key!=="Enter" && e.key!==" ") return;
+  const c=e.target.closest(".wfm-card[data-model]");
+  if(!c) return;
+  e.preventDefault();
+  openZoom(parseInt(c.dataset.model,10));
+});
 
 /* ---- weekly asset ranking ----
    Optional: a week without a `ranking` array simply doesn't draw one. Rank is
@@ -1536,7 +1638,14 @@ document.addEventListener("keydown",e=>{
   // Checked before class mode returns: the class uses the plain link, and Esc
   // has to close an enlarged chart for them too.
   if(document.body.classList.contains("lightboxing")){ if(e.key==="Escape"){ e.preventDefault(); closeLightbox(); } return; }
-  // Also ahead of the class-mode return: the models page is mostly for them.
+  // Both ahead of the class-mode return: the models page is mostly for them.
+  // The enlarged model is checked first, being the thing on top.
+  if(document.body.classList.contains("wfmzooming")){
+    if(e.key==="Escape"){ e.preventDefault(); closeZoom(); }
+    else if(e.key==="ArrowRight"){ e.preventDefault(); zoomStep(1); }
+    else if(e.key==="ArrowLeft"){ e.preventDefault(); zoomStep(-1); }
+    return;
+  }
   if(document.body.classList.contains("wfmmode")){ if(e.key==="Escape"){ e.preventDefault(); leaveWfm(); } return; }
   if(document.body.classList.contains("labelling")){ if(e.key==="Escape") closeLabels(); return; }
   if(document.body.classList.contains("building")){ if(e.key==="Escape") closeBuilder(); return; }

@@ -145,8 +145,24 @@ Because it lives outside `render()`, nothing re-renders underneath it, so it is
 built once at load. `state.wfm` exists only so `syncHash` knows the hash names
 the page rather than the week beneath it.
 
-A model needs `id` (`WFM-n`), `name`, `colour`, `flow` (array of steps, drawn
-with arrows between), `tell`, and optionally `note` and `primary:true`.
+A model needs `id` (`WFM-n`), `name`, `colour`, `flow` (array of steps),
+`tell`, and optionally `note` and `primary:true`.
+
+**`flow` draws as a vertical `<ol>`, one step per row, with a dot and a rail
+as the connector. Don't put the arrows back.** It was first built as a
+wrapping row of chips with `→` between them as text, which left arrows
+stranded at the end of lines pointing at nothing and rewrapped into a
+different shape at every screen width — worst on a phone. Drawn as a list it
+reads identically at any width, a long step just wraps inside its own row, and
+a screen reader gets the sequence too.
+
+**Each card opens enlarged.** Clicking one (or Enter/Space — cards are
+`role="button"`) opens `#wfmzoom` at z-index 85: above the models page and the
+label panel, below the chart lightbox, which stays topmost. Previous/Next step
+through all six without returning to the grid, which is how you walk a class
+through them; Esc, Close, or clicking the surround dismisses. Arrow keys work
+while it is open, checked ahead of the models page in the keydown listener
+since it is the thing on top.
 
 In a week's ranking, a WFM cell naming models the guide defines becomes a
 button: pressing it goes to the models page and gold-rings that model, so a
